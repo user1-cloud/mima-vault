@@ -1,0 +1,56 @@
+use std::sync::Mutex;
+use tauri::Manager;
+
+mod commands;
+mod crypto;
+mod db;
+mod meta_db;
+
+pub fn run() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_dialog::init())
+        .manage(commands::VaultKey(Mutex::new(None)))
+        .setup(|app| {
+            let app_dir = app.path().app_data_dir().expect("failed to get app data dir");
+            std::fs::create_dir_all(&app_dir).expect("failed to create app data dir");
+
+            let meta_path = app_dir.join("mima.db");
+            let meta_conn =
+                rusqlite::Connection::open(&meta_path).expect("failed to open meta database");
+            meta_db::init_meta(&meta_conn).expect("failed to init meta database");
+            drop(meta_conn);
+            app.manage(meta_db::MetaDb::new(meta_path));
+
+            let vaults_dir = app_dir.join("vaults");
+            std::fs::create_dir_all(&vaults_dir).expect("failed to create vaults directory");
+
+            app.manage(db::DbState::new_empty());
+            Ok(())
+        })
+        .invoke_handler(tauri::generate_handler![
+            commands::list_vaults,
+            commands::create_vault,
+            commands::open_vault,
+            commands::close_vault,
+            commands::rename_vault,
+            commands::delete_vault,
+            commands::list_entries,
+            commands::get_entry,
+            commands::create_entry,
+            commands::update_entry,
+            commands::delete_entry,
+            commands::reorder_entries,
+            commands::generate_password,
+            commands::copy_to_clipboard,
+            commands::export_plaintext,
+            commands::export_encrypted,
+            commands::preview_import,
+            commands::confirm_import,
+            commands::preview_encrypted_import,
+            commands::confirm_encrypted_import,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

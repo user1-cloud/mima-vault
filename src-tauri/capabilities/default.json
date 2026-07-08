@@ -1,0 +1,13 @@
+{
+  "identifier": "default",
+  "description": "Default capabilities for Mima",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "clipboard-manager:default",
+    "clipboard-manager:allow-read-text",
+    "clipboard-manager:allow-write-text",
+    "shell:allow-open",
+    "dialog:default"
+  ]
+}
