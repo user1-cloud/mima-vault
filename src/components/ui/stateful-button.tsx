@@ -71,8 +71,10 @@ export const StatefulButton = ({
     <motion.button
       layout
       ref={scope}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.98 }}
       className={cn(
-        "flex min-w-[120px] cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground ring-offset-2 transition duration-200 hover:ring-2 hover:ring-primary dark:ring-offset-black",
+        "flex h-10 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground ring-offset-2 transition duration-200 hover:ring-2 hover:ring-primary dark:ring-offset-black",
         className,
       )}
       {...buttonProps}
@@ -81,7 +83,7 @@ export const StatefulButton = ({
       <motion.div layout className="flex items-center justify-center gap-2">
         <Loader2 className="loader w-5 h-5 animate-spin text-primary-foreground hidden" />
         <Check className="check w-5 h-5 text-primary-foreground hidden" />
-        <motion.span layout>{children}</motion.span>
+        {children}
       </motion.div>
     </motion.button>
   );

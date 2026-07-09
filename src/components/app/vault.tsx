@@ -48,7 +48,7 @@ import { open } from "@tauri-apps/plugin-shell";
 import { save, open as openFile } from "@tauri-apps/plugin-dialog";
 import { Button } from "@/components/ui/button";
 import { StatefulButton } from "@/components/ui/stateful-button";
-import { Input } from "@/components/ui/input";
+
 import { Tooltip } from "@/components/ui/tooltip";
 import { CardTitle } from "@/components/ui/card-hover-effect";
 import { CardSpotlight } from "@/components/ui/card-spotlight";
@@ -61,7 +61,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
-import { HoverBorderGradient } from "@/components/ui/hover-border-gradient";
+import { EncryptedText } from "@/components/ui/encrypted-text";
+
+import { Input } from "@/components/ui/input";
 import { EntryDialog } from "./entry-dialog";
 import { LangSwitcher } from "./lang-switcher";
 import { DottedGlowBackground } from "@/components/ui/dotted-glow-background";
@@ -300,42 +302,21 @@ export function Vault() {
         speedScale={0.4}
       />
       {/* Sidebar */}
-      <div className="w-72 lg:w-80 border-r border-border flex flex-col bg-surface-elevated relative z-10">
+      <div className={`w-full md:w-72 lg:w-80 border-r border-border flex flex-col bg-surface-elevated relative z-10 ${selected ? 'hidden md:flex' : ''}`}>
         {/* Header */}
         <div className="p-4 border-b border-border space-y-3">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={handleClose}
-                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-white transition-colors"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                {t("back")}
-              </button>
-              <div className="flex items-center gap-1">
-                <LangSwitcher />
-                <Tooltip content={t("lockVault")} side="bottom">
-                  <motion.div whileHover={{ scale: 1.1, rotate: 5 }} whileTap={{ scale: 0.9 }}>
-                    <Button variant="ghost" size="icon" onClick={handleClose}>
-                      <LogOut className="w-4 h-4" />
-                    </Button>
-                  </motion.div>
-                </Tooltip>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 min-w-0">
               <TextGenerateEffect
                 words={activeVault?.name ?? "Mima"}
-                className="text-lg font-semibold tracking-tight [&_div]:text-lg [&_div]:mt-0"
-                duration={0.3}
+                className="text-lg font-semibold tracking-tight truncate [&_div]:text-lg [&_div]:mt-0"
               />
               <Tooltip content={t("vaultSettings")} side="bottom">
                 <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    className="h-7 w-7 shrink-0"
                     onClick={handleOpenSettings}
                   >
                     <Settings className="w-3.5 h-3.5" />
@@ -343,14 +324,24 @@ export function Vault() {
                 </motion.div>
               </Tooltip>
             </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <LangSwitcher />
+              <Tooltip content={t("lockVault")} side="bottom">
+                <motion.div whileHover={{ scale: 1.1, rotate: 5 }} whileTap={{ scale: 0.9 }}>
+                  <Button variant="ghost" size="icon" onClick={handleClose}>
+                    <LogOut className="w-4 h-4" />
+                  </Button>
+                </motion.div>
+              </Tooltip>
+            </div>
           </div>
-          <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground transition-colors group-focus-within:text-primary" />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder={t("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 transition-shadow duration-300 focus:shadow-[0_0_15px_-3px_oklch(0.65_0.2_250/0.3)]"
+              className="pl-9 rounded-full border-border"
             />
           </div>
         </div>
@@ -389,92 +380,88 @@ export function Vault() {
                 items={items.map((e) => e.id)}
                 strategy={verticalListSortingStrategy}
               >
-                {filtered.map((entry) => (
-                  <SortableEntryItem
-                    key={entry.id}
-                    entry={entry}
-                    isSelected={selectedId === entry.id}
-                    onSelect={() => selectEntry(entry.id)}
-                  />
-                ))}
+                <AnimatePresence>
+                  {filtered.map((entry) => (
+                    <motion.div
+                      key={entry.id}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                    >
+                      <SortableEntryItem
+                        entry={entry}
+                        isSelected={selectedId === entry.id}
+                        onSelect={() => selectEntry(entry.id)}
+                      />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </SortableContext>
             </DndContext>
           )}
         </div>
 
-        {/* Add button */}
+        {/* Action buttons */}
         <div className="p-3 border-t border-border">
-          <HoverBorderGradient
-            containerClassName="rounded-lg w-full"
-            className="w-full flex items-center justify-center"
-            duration={2}
-          >
+          <div className="flex items-center gap-2">
             <StatefulButton
               onClick={handleCreate}
-              className="w-full bg-transparent hover:bg-transparent text-white hover:ring-0 min-w-0"
+              className="flex-1"
             >
-              <motion.span
-                animate={{ rotate: [0, 90, 0] }}
-                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                className="inline-flex mr-2"
-              >
-                <Plus className="w-4 h-4" />
-              </motion.span>
+              <Plus className="w-4 h-4 shrink-0" />
               {t("newEntry")}
             </StatefulButton>
-          </HoverBorderGradient>
-
-          <div className="flex gap-2 mt-2 px-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex-1 text-xs text-muted-foreground hover:text-white"
-              onClick={async () => {
-                const p = await save({
-                  defaultPath: "mima-export.json",
-                  filters: [{ name: t("jsonFile"), extensions: ["json"] }],
-                });
-                if (p) {
-                  try {
-                    await useApp.getState().exportPlaintext(p);
-                  } catch (_) {}
-                }
-              }}
-            >
-              <Download className="w-3 h-3 mr-1" />
-              {t("export")}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex-1 text-xs text-muted-foreground hover:text-white"
-              onClick={async () => {
-                const p = await openFile({
-                  filters: [
-                    { name: t("jsonFile"), extensions: ["json"] },
-                    { name: t("backupFile"), extensions: ["mima-backup"] },
-                  ],
-                });
-                if (p) {
-                  try {
-                    const preview = await useApp.getState().previewImport(p as string);
-                    if (preview.entries.length > 0) {
-                      await useApp.getState().confirmImport(p as string);
-                      await useApp.getState().loadEntries();
-                    }
-                  } catch (_) {}
-                }
-              }}
-            >
-              <Upload className="w-3 h-3 mr-1" />
-              {t("import")}
-            </Button>
+            <Tooltip content={t("export")} side="bottom">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={async () => {
+                  const p = await save({
+                    defaultPath: `${activeVault?.name ?? "mima"}-export.json`,
+                    filters: [{ name: t("jsonFile"), extensions: ["json"] }],
+                  });
+                  if (p) {
+                    try {
+                      await useApp.getState().exportPlaintext(p);
+                    } catch (_) {}
+                  }
+                }}
+              >
+                <Download className="w-4 h-4" />
+              </Button>
+            </Tooltip>
+            <Tooltip content={t("import")} side="bottom">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={async () => {
+                  const p = await openFile({
+                    filters: [
+                      { name: t("jsonFile"), extensions: ["json"] },
+                      { name: t("backupFile"), extensions: ["mima-backup"] },
+                    ],
+                  });
+                  if (p) {
+                    try {
+                      const preview = await useApp.getState().previewImport(p as string);
+                      if (preview.entries.length > 0) {
+                        await useApp.getState().confirmImport(p as string);
+                        await useApp.getState().loadEntries();
+                      }
+                    } catch (_) {}
+                  }
+                }}
+              >
+                <Upload className="w-4 h-4" />
+              </Button>
+            </Tooltip>
           </div>
         </div>
       </div>
 
       {/* Detail pane */}
-      <div className="flex-1 flex flex-col relative z-10">
+      <div className={`flex-1 flex flex-col relative z-10 ${selected ? '' : 'hidden md:flex'}`}>
         <AnimatePresence mode="wait">
           {selected ? (
             <motion.div
@@ -485,7 +472,16 @@ export function Vault() {
               exit="exit"
               className="flex-1 overflow-y-auto p-6 lg:p-10"
             >
-              <div className="max-w-xl space-y-6">
+              <div className="space-y-6">
+                <div className="md:hidden -mb-3">
+                  <Tooltip content={t("back")} side="bottom">
+                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                      <Button variant="ghost" size="icon" onClick={() => selectEntry(null)}>
+                        <ArrowLeft className="w-4 h-4" />
+                      </Button>
+                    </motion.div>
+                  </Tooltip>
+                </div>
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-4">
@@ -499,11 +495,10 @@ export function Vault() {
                         {selected.name.charAt(0).toUpperCase()}
                       </span>
                     </motion.div>
-                    <div>
-                      <TextGenerateEffect
-                        words={selected.name}
-                        className="text-xl font-semibold [&_div]:text-xl [&_div]:mt-0"
-                        duration={0.3}
+                    <div className="flex flex-col">
+                      <EncryptedText
+                        text={selected.name}
+                        className="text-xl font-semibold"
                       />
                       {selected.url && (
                         <button

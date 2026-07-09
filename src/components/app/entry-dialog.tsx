@@ -8,6 +8,7 @@ import { useApp, type Entry } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -211,22 +212,23 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
                   </motion.button>
                 </div>
               </div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={handleGenerate}
-                  title={t("generatePassword")}
-                  disabled={generating}
-                >
-                  {generating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Wand2 className="w-4 h-4" />
-                  )}
-                </Button>
-              </motion.div>
+              <Tooltip content={t("generatePassword")} side="bottom">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleGenerate}
+                    disabled={generating}
+                  >
+                    {generating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="w-4 h-4" />
+                    )}
+                  </Button>
+                </motion.div>
+              </Tooltip>
             </div>
             <AnimatePresence>
               {passwordValue && (

@@ -14,6 +14,7 @@ import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { StatefulButton } from "@/components/ui/stateful-button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CardSpotlight } from "@/components/ui/card-spotlight";
@@ -137,7 +138,6 @@ export function VaultList() {
           <TextGenerateEffect
             words="Mima"
             className="text-xl font-semibold tracking-tight [&_div]:text-xl"
-            duration={0.4}
           />
         </div>
 
@@ -173,7 +173,6 @@ export function VaultList() {
               <TextGenerateEffect
                 words={t("createVault")}
                 className="text-lg font-semibold tracking-tight text-center [&_div]:text-lg"
-                duration={0.3}
               />
               {error && (
                 <motion.div
@@ -230,19 +229,13 @@ export function VaultList() {
                 >
                   {t("cancel")}
                 </Button>
-                <motion.div
+                <StatefulButton
                   className="flex-1"
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
+                  disabled={creating || !vaultName || !password}
+                  onClick={handleCreate}
                 >
-                  <StatefulButton
-                    className="w-full"
-                    disabled={creating || !vaultName || !password}
-                    onClick={handleCreate}
-                  >
-                    {t("createVaultBtn")}
-                  </StatefulButton>
-                </motion.div>
+                  {t("createVaultBtn")}
+                </StatefulButton>
               </div>
             </div>
           </CardSpotlight>
@@ -270,22 +263,24 @@ export function VaultList() {
                       {vault.created_at}
                     </p>
                   </div>
-                  <motion.div
-                    whileHover={{ scale: 1.15 }}
-                    whileTap={{ scale: 0.85 }}
-                  >
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteId(vault.id);
-                      }}
+                  <Tooltip content={t("deleteVault")} side="bottom">
+                    <motion.div
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.85 }}
                     >
-                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-danger" />
-                    </Button>
-                  </motion.div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className=""
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteId(vault.id);
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-muted-foreground hover:text-danger" />
+                      </Button>
+                    </motion.div>
+                  </Tooltip>
                 </motion.div>
               ))}
             </div>

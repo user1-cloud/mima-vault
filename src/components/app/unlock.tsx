@@ -84,15 +84,14 @@ export function Unlock() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ y: 8 }}
+            animate={{ y: 0 }}
             transition={{ delay: 0.2 }}
             className="text-center space-y-1.5"
           >
             <TextGenerateEffect
               words={vault?.name ?? ""}
               className="text-xl font-semibold tracking-tight [&_div]:text-xl"
-              duration={0.4}
             />
             <p className="text-sm text-muted-foreground">
               {t("unlockDesc")}

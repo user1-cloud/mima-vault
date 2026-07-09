@@ -1,5 +1,12 @@
 import java.util.Properties
 
+val keystoreProperties = Properties().apply {
+    val propFile = rootProject.file("key.properties")
+    if (propFile.exists()) {
+        propFile.inputStream().use { load(it) }
+    }
+}
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -16,6 +23,16 @@ val tauriProperties = Properties().apply {
 android {
     compileSdk = 36
     namespace = "com.mima.app"
+    signingConfigs {
+        if (keystoreProperties.isNotEmpty()) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
         applicationId = "com.mima.app"
@@ -37,6 +54,9 @@ android {
             }
         }
         getByName("release") {
+            if (keystoreProperties.isNotEmpty()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             proguardFiles(
                 *fileTree(".") { include("**/*.pro") }
@@ -50,6 +70,13 @@ android {
     }
     buildFeatures {
         buildConfig = true
+    }
+    sourceSets {
+        getByName("main") {
+            manifest.srcFile("src/main/AndroidManifest.xml")
+            java.srcDirs("src/main/java")
+            res.srcDirs("src/main/res")
+        }
     }
 }
 
@@ -69,3 +96,14 @@ dependencies {
 }
 
 apply(from = "tauri.build.gradle.kts")
+
+tasks.register("buildTauri") {
+    group = "tauri"
+    description = "Builds the Tauri web assets and copies them to the Android assets directory"
+    doLast {
+        val assetsDir = File(project.projectDir, "src/main/assets")
+        if (!assetsDir.exists()) {
+            assetsDir.mkdirs()
+        }
+    }
+}
