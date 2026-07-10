@@ -16,10 +16,6 @@ echo "=== Release: $RELEASE_DIR ==="
 rm -rf "$RELEASE_DIR"
 mkdir -p "$RELEASE_DIR"
 
-# 清理 Rust 编译缓存，确保完整重编
-echo "=== Cleaning previous build artifacts ==="
-cargo clean --manifest-path "$PROJECT_DIR/src-tauri/Cargo.toml"
-rm -rf "$PROJECT_DIR/src-tauri/target"
 
 # 检查 Rust target 是否已安装
 has_target() {
@@ -54,8 +50,9 @@ build_windows() {
 
     # x64
     echo "--- Windows x64 ---"
+    local bundle_dir="$PROJECT_DIR/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
+    rm -rf "$bundle_dir"
     if build_with_target x86_64-pc-windows-msvc --bundles msi,nsis; then
-        local bundle_dir="$PROJECT_DIR/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
         if [ -d "$bundle_dir/msi" ]; then
             cp "$bundle_dir/msi"/*.msi "$RELEASE_DIR/"
             echo "  -> msi copied"
@@ -69,8 +66,9 @@ build_windows() {
 
     # ARM64 (Snapdragon X 等设备)
     echo "--- Windows ARM64 ---"
+    local arm64_dir="$PROJECT_DIR/src-tauri/target/aarch64-pc-windows-msvc/release/bundle"
+    rm -rf "$arm64_dir"
     if build_with_target aarch64-pc-windows-msvc --bundles msi,nsis; then
-        local arm64_dir="$PROJECT_DIR/src-tauri/target/aarch64-pc-windows-msvc/release/bundle"
         if [ -d "$arm64_dir/msi" ]; then
             cp "$arm64_dir/msi"/*.msi "$RELEASE_DIR/"
             echo "  -> arm64 msi copied"
@@ -96,8 +94,9 @@ build_linux() {
 
     # x64
     echo "--- Linux x64 ---"
+    local bundle_dir="$PROJECT_DIR/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle"
+    rm -rf "$bundle_dir"
     if build_with_target x86_64-unknown-linux-gnu --bundles deb,appimage; then
-        local bundle_dir="$PROJECT_DIR/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle"
         if [ -d "$bundle_dir/deb" ]; then
             cp "$bundle_dir/deb"/*.deb "$RELEASE_DIR/"
             echo "  -> deb copied"
@@ -111,14 +110,15 @@ build_linux() {
 
     # ARM64
     echo "--- Linux ARM64 ---"
+    local arm64_dir="$PROJECT_DIR/src-tauri/target/aarch64-unknown-linux-gnu/release/bundle"
+    rm -rf "$arm64_dir"
     if build_with_target aarch64-unknown-linux-gnu --bundles deb,appimage; then
-        local bundle_dir="$PROJECT_DIR/src-tauri/target/aarch64-unknown-linux-gnu/release/bundle"
-        if [ -d "$bundle_dir/deb" ]; then
-            cp "$bundle_dir/deb"/*.deb "$RELEASE_DIR/"
+        if [ -d "$arm64_dir/deb" ]; then
+            cp "$arm64_dir/deb"/*.deb "$RELEASE_DIR/"
             echo "  -> arm64 deb copied"
         fi
-        if [ -d "$bundle_dir/appimage" ]; then
-            cp "$bundle_dir/appimage"/*.AppImage "$RELEASE_DIR/"
+        if [ -d "$arm64_dir/appimage" ]; then
+            cp "$arm64_dir/appimage"/*.AppImage "$RELEASE_DIR/"
             echo "  -> arm64 AppImage copied"
         fi
         echo "Linux ARM64 OK"
@@ -137,9 +137,9 @@ build_android() {
     # Universal (所有架构合一)
     echo "--- Android universal ---"
     cd "$PROJECT_DIR" && pnpm tauri android build
-    local universal_apk="$ANDROID_DIR/app/build/outputs/apk/universal/release/app-universal-release.apk"
-    if [ -f "$universal_apk" ]; then
-        cp "$universal_apk" "$RELEASE_DIR/"
+    local universal_dir="$ANDROID_DIR/app/build/outputs/apk/universal/release"
+    if ls "$universal_dir"/*.apk >/dev/null 2>&1; then
+        cp "$universal_dir"/*.apk "$RELEASE_DIR/"
         echo "  -> universal APK copied"
     else
         echo "  WARNING: universal APK not found, continuing with per-arch builds"
@@ -156,12 +156,12 @@ build_android() {
             echo "  WARNING: Android $arch build failed, skipping"
             continue
         }
-        local src="$ANDROID_DIR/app/build/outputs/apk/$arch/release/app-$arch-release.apk"
-        if [ -f "$src" ]; then
-            cp "$src" "$RELEASE_DIR/"
+        local src_dir="$ANDROID_DIR/app/build/outputs/apk/$arch/release"
+        if ls "$src_dir"/*.apk >/dev/null 2>&1; then
+            cp "$src_dir"/*.apk "$RELEASE_DIR/"
             echo "  -> $arch APK copied"
         else
-            echo "  WARNING: APK not found at $src"
+            echo "  WARNING: APK not found in $src_dir"
         fi
     done
 
