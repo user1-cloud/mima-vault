@@ -214,7 +214,6 @@ export function Vault() {
   const [bioEnabled, setBioEnabled] = useState(false);
   const [bioPassword, setBioPassword] = useState("");
   const [bioError, setBioError] = useState("");
-  const [bioLoading, setBioLoading] = useState(false);
 
   const [items, setItems] = useState<Entry[]>(entries);
   useEffect(() => {
@@ -281,24 +280,22 @@ export function Vault() {
   const handleEnableBiometric = useCallback(async () => {
     if (!activeVault || !bioPassword) {
       setBioError(t("passwordRequired"));
-      return;
+      throw new Error("password required");
     }
-    setBioLoading(true);
     setBioError("");
+    const ok = await verifyPassword(bioPassword);
+    if (!ok) {
+      setBioError(t("incorrectPassword"));
+      throw new Error("incorrect password");
+    }
     try {
-      const ok = await verifyPassword(bioPassword);
-      if (!ok) {
-        setBioError(t("incorrectPassword"));
-        return;
-      }
       await enableBiometric(activeVault.id, bioPassword);
-      setBioEnabled(true);
-      setBioPassword("");
     } catch (e) {
       setBioError(String(e));
-    } finally {
-      setBioLoading(false);
+      throw e;
     }
+    setBioEnabled(true);
+    setBioPassword("");
   }, [activeVault, bioPassword, enableBiometric, verifyPassword]);
 
   const handleDisableBiometric = useCallback(async () => {
@@ -777,16 +774,14 @@ export function Vault() {
                       {bioError && (
                         <p className="text-xs text-danger">{bioError}</p>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
+                      <StatefulButton
                         className="w-full"
-                        disabled={bioLoading || !bioPassword}
+                        disabled={!bioPassword}
                         onClick={handleEnableBiometric}
                       >
-                        <Fingerprint className="w-4 h-4 mr-2" />
+                        <Fingerprint className="w-4 h-4" />
                         {t("enableBiometric")}
-                      </Button>
+                      </StatefulButton>
                     </div>
                   )}
                 </div>
