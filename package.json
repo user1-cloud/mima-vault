@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "gen-locales": "node scripts/generate-locales.mjs",
+    "sync-csv": "node scripts/sync-csv.mjs"
   },
   "keywords": [],
   "author": "",

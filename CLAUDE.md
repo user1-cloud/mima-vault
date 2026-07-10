@@ -55,6 +55,7 @@ pnpm dev             # Vite dev server only
 pnpm build           # TypeScript check + Vite production build
 pnpm tauri dev       # Full Tauri dev mode (Vite + Rust)
 pnpm tauri build     # Production Tauri build
+pnpm gen-locales     # Regenerate locale TS files from locales.csv
 cargo check          # Type-check Rust only (from src-tauri/)
 cargo build          # Build Rust binary (from src-tauri/)
 ```
@@ -66,7 +67,7 @@ cargo build          # Build Rust binary (from src-tauri/)
 - Frontend only ever sees `DecryptedEntry` structs, never raw encrypted data
 - `VaultKey(pub Mutex<Option<[u8; 32]>>)` is Tauri managed state — `None` means locked, `Some` means unlocked
 - shadcn/ui components were rewritten to use our custom Tailwind theme tokens (`surface`, `border`, `primary`, `muted`) instead of oklch() light-mode defaults, since the app is always dark-themed
-- i18n: components call `useLocale()` to subscribe to language changes, then use `t("key")` for translated strings. New keys must be added to both `zh` and `en` objects in `src/lib/i18n.ts`.
+- i18n: **Never read `locales.csv`** — it has many language columns and wastes tokens. Instead, add new keys directly to `src/locales/zh.ts` and `src/locales/en.ts`, then run `pnpm sync-csv` to update the CSV from those two files. The user will fill in other language translations in the CSV themselves, then run `pnpm gen-locales` to regenerate all locale TS files. Components call `useLocale()` to subscribe, then use `t("key")` for strings. `t()` falls back to English for missing keys.
 - Use kebab-case for file names, PascalCase for component names
 - No emojis in the UI
 - Avoid comments — code should be self-documenting

@@ -1,0 +1,26 @@
+import { registerLocale } from "@/lib/i18n";
+import zh from "./zh";
+import en from "./en";
+import zhHk from "./zh-hk";
+import zhTw from "./zh-tw";
+import ja from "./ja";
+import ko from "./ko";
+import de from "./de";
+import es from "./es";
+import fr from "./fr";
+import ru from "./ru";
+import ptBr from "./pt-br";
+import it from "./it";
+
+registerLocale("zh", "中文(简体)", zh);
+registerLocale("en", "English", en);
+registerLocale("zh-hk", "中文(香港)", zhHk);
+registerLocale("zh-tw", "中文(臺灣)", zhTw);
+registerLocale("ja", "日本語", ja);
+registerLocale("ko", "한국어", ko);
+registerLocale("de", "Deutsch", de);
+registerLocale("es", "Español", es);
+registerLocale("fr", "Français", fr);
+registerLocale("ru", "Русский", ru);
+registerLocale("pt-br", "Português (BR)", ptBr);
+registerLocale("it", "Italiano", it);
