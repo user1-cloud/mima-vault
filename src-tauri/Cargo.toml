@@ -1,6 +1,6 @@
 [package]
 name = "mima"
-version = "0.2.0"
+version = "0.3.0"
 description = "A modern, lightweight password manager"
 authors = ["you"]
 edition = "2021"
@@ -31,3 +31,6 @@ rusqlite = { version = "0.31", features = ["bundled"] }
 
 # System keychain
 keyring = "3"
+
+# Biometric authentication
+tauri-plugin-biometry = "0.2"

@@ -1,5 +1,12 @@
 import { create } from "zustand";
 import { invoke } from "@tauri-apps/api/core";
+import {
+  checkStatus,
+  setData,
+  getData,
+  hasData,
+  removeData,
+} from "@choochmeque/tauri-plugin-biometry-api";
 
 export interface Entry {
   id: number;
@@ -74,6 +81,13 @@ interface AppState {
     filePath: string,
     password: string
   ) => Promise<number>;
+
+  checkBiometricAvailable: () => Promise<boolean>;
+  checkBiometricEnabled: (vaultId: number) => Promise<boolean>;
+  enableBiometric: (vaultId: number, password: string) => Promise<void>;
+  biometricUnlock: (vaultId: number) => Promise<boolean>;
+  disableBiometric: (vaultId: number) => Promise<void>;
+  verifyPassword: (password: string) => Promise<boolean>;
 }
 
 export const useApp = create<AppState>((set, get) => ({
@@ -138,6 +152,7 @@ export const useApp = create<AppState>((set, get) => ({
 
   deleteVault: async (vaultId) => {
     await invoke("delete_vault", { vaultId });
+    await get().disableBiometric(vaultId);
     if (get().activeVault?.id === vaultId) {
       set({
         activeVault: null,
@@ -224,5 +239,58 @@ export const useApp = create<AppState>((set, get) => ({
     });
     await get().loadEntries();
     return count;
+  },
+
+  checkBiometricAvailable: async () => {
+    try {
+      const status = await checkStatus();
+      return status.isAvailable;
+    } catch {
+      return false;
+    }
+  },
+
+  checkBiometricEnabled: async (vaultId) => {
+    try {
+      const result = await hasData({ domain: "mima", name: `vault_${vaultId}` });
+      return result === true || (result as unknown as { hasData: boolean })?.hasData === true;
+    } catch {
+      return false;
+    }
+  },
+
+  enableBiometric: async (vaultId, password) => {
+    await setData({
+      domain: "mima",
+      name: `vault_${vaultId}`,
+      data: password,
+    });
+  },
+
+  biometricUnlock: async (vaultId) => {
+    try {
+      const { data: password } = await getData({
+        domain: "mima",
+        name: `vault_${vaultId}`,
+        reason: "Verify your identity to unlock the vault",
+      });
+      return await get().openVault(vaultId, password);
+    } catch {
+      return false;
+    }
+  },
+
+  disableBiometric: async (vaultId) => {
+    try {
+      await removeData({ domain: "mima", name: `vault_${vaultId}` });
+    } catch {
+      // already removed
+    }
+  },
+
+  verifyPassword: async (password) => {
+    return await invoke<boolean>("verify_password", {
+      masterPassword: password,
+    });
   },
 }));

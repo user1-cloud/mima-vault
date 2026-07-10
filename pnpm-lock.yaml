@@ -207,6 +207,9 @@ importers:
 
   .:
     dependencies:
+      '@choochmeque/tauri-plugin-biometry-api':
+        specifier: ^0.2.5
+        version: 0.2.8
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -332,6 +335,9 @@ packages:
   '@babel/runtime@7.29.7':
     resolution: {integrity: sha512-Nq8OhGWiZIZGV6hLHoyAKLLcJihP/xFeBMGJoUrxTX2psI8dCifzLhZISFb+VWS3wFMRDmCGw5R+dOySCqPLhw==}
     engines: {node: '>=6.9.0'}
+
+  '@choochmeque/tauri-plugin-biometry-api@0.2.8':
+    resolution: {integrity: sha512-rPxbjUggKK7nTPOdIQQS5GMzCoToB3L5JHK5HZeA3HBDiSDP5uWK7mZ45i9Do/1lB07DRNSNGJZ1UMA2yhqkcQ==}
 
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
@@ -1600,6 +1606,10 @@ snapshots:
   '@alloc/quick-lru@5.2.0': {}
 
   '@babel/runtime@7.29.7': {}
+
+  '@choochmeque/tauri-plugin-biometry-api@0.2.8':
+    dependencies:
+      '@tauri-apps/api': 2.11.1
 
   '@dimforge/rapier3d-compat@0.12.0': {}
 

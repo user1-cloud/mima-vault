@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion, type Variants } from "motion/react";
-import { Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Fingerprint } from "lucide-react";
 import mimaIcon from "@/assets/mima.svg";
 import { useApp } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
@@ -27,7 +27,7 @@ const cardVariants: Variants = {
 export function Unlock() {
   const { vaultId } = useParams<{ vaultId: string }>();
   const navigate = useNavigate();
-  const { vaults, openVault } = useApp();
+  const { vaults, openVault, checkBiometricEnabled, biometricUnlock } = useApp();
 
   useLocale();
 
@@ -36,6 +36,12 @@ export function Unlock() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
+
+  useEffect(() => {
+    checkBiometricEnabled(Number(vaultId)).then(setBiometricAvailable);
+  }, [vaultId, checkBiometricEnabled]);
 
   const handleUnlock = useCallback(async () => {
     setLoading(true);
@@ -53,6 +59,23 @@ export function Unlock() {
       setLoading(false);
     }
   }, [vaultId, password, openVault, navigate]);
+
+  const handleBiometricUnlock = useCallback(async () => {
+    setBiometricLoading(true);
+    setError("");
+    try {
+      const ok = await biometricUnlock(Number(vaultId));
+      if (ok) {
+        navigate("/vault");
+      } else {
+        setError(t("biometricFailed"));
+      }
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setBiometricLoading(false);
+    }
+  }, [vaultId, biometricUnlock, navigate]);
 
   return (
     <div className="h-full overflow-y-auto bg-surface p-4 relative">
@@ -152,6 +175,50 @@ export function Unlock() {
               </StatefulButton>
             </motion.div>
           </motion.form>
+
+          {biometricAvailable && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="flex items-center justify-center"
+            >
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="h-px flex-1 w-8 bg-border" />
+                {t("biometricUnlock")}
+                <span className="h-px flex-1 w-8 bg-border" />
+              </div>
+            </motion.div>
+          )}
+
+          {biometricAvailable && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.32 }}
+              className="flex justify-center"
+            >
+              <motion.button
+                type="button"
+                whileHover={{ scale: 1.08 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={handleBiometricUnlock}
+                disabled={biometricLoading}
+                className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+              >
+                {biometricLoading ? (
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                  >
+                    <Fingerprint className="w-6 h-6" />
+                  </motion.div>
+                ) : (
+                  <Fingerprint className="w-6 h-6" />
+                )}
+              </motion.button>
+            </motion.div>
+          )}
 
           <motion.button
             initial={{ opacity: 0 }}

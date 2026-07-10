@@ -22,6 +22,8 @@ import {
   Upload,
   Settings,
   GripVertical,
+  Fingerprint,
+  ShieldOff,
 } from "lucide-react";
 import {
   DndContext,
@@ -179,14 +181,26 @@ export function Vault() {
     setSearch,
     selectEntry,
     activeVault,
+    isLocked,
     closeVault,
     deleteEntry,
     copyToClipboard,
     renameVault,
     reorderEntries,
+    verifyPassword,
+    checkBiometricAvailable,
+    checkBiometricEnabled,
+    enableBiometric,
+    disableBiometric,
   } = useApp();
 
   useLocale();
+
+  useEffect(() => {
+    if (isLocked || !activeVault) {
+      navigate("/", { replace: true });
+    }
+  }, [isLocked, activeVault, navigate]);
 
   const debouncedSearch = useDebounce(searchQuery, 200);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -196,6 +210,11 @@ export function Vault() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [vaultNameInput, setVaultNameInput] = useState("");
+  const [bioAvailable, setBioAvailable] = useState(false);
+  const [bioEnabled, setBioEnabled] = useState(false);
+  const [bioPassword, setBioPassword] = useState("");
+  const [bioError, setBioError] = useState("");
+  const [bioLoading, setBioLoading] = useState(false);
 
   const [items, setItems] = useState<Entry[]>(entries);
   useEffect(() => {
@@ -220,7 +239,7 @@ export function Vault() {
 
   const handleClose = useCallback(async () => {
     await closeVault();
-    navigate("/");
+    navigate("/", { replace: true });
   }, [closeVault, navigate]);
 
   const handleCopy = useCallback(
@@ -244,14 +263,49 @@ export function Vault() {
 
   const handleOpenSettings = useCallback(() => {
     setVaultNameInput(activeVault?.name ?? "");
+    setBioPassword("");
+    setBioError("");
+    if (activeVault) {
+      checkBiometricAvailable().then(setBioAvailable);
+      checkBiometricEnabled(activeVault.id).then(setBioEnabled);
+    }
     setSettingsOpen(true);
-  }, [activeVault]);
+  }, [activeVault, checkBiometricAvailable, checkBiometricEnabled]);
 
   const handleSaveSettings = useCallback(async () => {
     if (!activeVault || !vaultNameInput.trim()) return;
     await renameVault(activeVault.id, vaultNameInput.trim());
     setSettingsOpen(false);
   }, [activeVault, vaultNameInput, renameVault]);
+
+  const handleEnableBiometric = useCallback(async () => {
+    if (!activeVault || !bioPassword) {
+      setBioError(t("passwordRequired"));
+      return;
+    }
+    setBioLoading(true);
+    setBioError("");
+    try {
+      const ok = await verifyPassword(bioPassword);
+      if (!ok) {
+        setBioError(t("incorrectPassword"));
+        return;
+      }
+      await enableBiometric(activeVault.id, bioPassword);
+      setBioEnabled(true);
+      setBioPassword("");
+    } catch (e) {
+      setBioError(String(e));
+    } finally {
+      setBioLoading(false);
+    }
+  }, [activeVault, bioPassword, enableBiometric, verifyPassword]);
+
+  const handleDisableBiometric = useCallback(async () => {
+    if (!activeVault) return;
+    await disableBiometric(activeVault.id);
+    setBioEnabled(false);
+  }, [activeVault, disableBiometric]);
 
   const handleDelete = useCallback(
     async (id: number) => {
@@ -689,6 +743,55 @@ export function Vault() {
                 placeholder={t("enterVaultName")}
               />
             </div>
+
+            {bioAvailable && (
+              <>
+                <div className="border-t border-border" />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Fingerprint className="w-4 h-4 text-primary" />
+                    <span className="text-sm font-medium">{t("biometricUnlock")}</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">{t("biometricDesc")}</p>
+
+                  {bioEnabled ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={handleDisableBiometric}
+                    >
+                      <ShieldOff className="w-4 h-4 mr-2" />
+                      {t("disableBiometric")}
+                    </Button>
+                  ) : (
+                    <div className="space-y-2">
+                      <Input
+                        type="password"
+                        value={bioPassword}
+                        onChange={(e) => setBioPassword(e.target.value)}
+                        placeholder={t("enterPasswordToEnable")}
+                        autoComplete="off"
+                        className="font-mono"
+                      />
+                      {bioError && (
+                        <p className="text-xs text-danger">{bioError}</p>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        disabled={bioLoading || !bioPassword}
+                        onClick={handleEnableBiometric}
+                      >
+                        <Fingerprint className="w-4 h-4 mr-2" />
+                        {t("enableBiometric")}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSettingsOpen(false)}>

@@ -81,6 +81,13 @@ const zh = {
   vaultSettings: "密码库设置",
   vaultSettingsDesc: "修改密码库的名称。",
   saveVaultSettings: "保存设置",
+  biometricUnlock: "指纹解锁",
+  enableBiometric: "启用指纹解锁",
+  disableBiometric: "禁用指纹解锁",
+  biometricDesc: "使用指纹或面部识别快速解锁密码库。",
+  biometricFailed: "生物识别验证失败",
+  enterPasswordToEnable: "输入主密码以启用生物识别",
+  biometricNotAvailable: "此设备不支持生物识别",
 };
 
 const en: Record<keyof typeof zh, string> = {
@@ -166,6 +173,13 @@ const en: Record<keyof typeof zh, string> = {
   vaultSettings: "Vault Settings",
   vaultSettingsDesc: "Change your vault name.",
   saveVaultSettings: "Save Settings",
+  biometricUnlock: "Biometric Unlock",
+  enableBiometric: "Enable Biometric Unlock",
+  disableBiometric: "Disable Biometric Unlock",
+  biometricDesc: "Unlock with fingerprint or face recognition.",
+  biometricFailed: "Biometric verification failed",
+  enterPasswordToEnable: "Enter master password to enable biometric unlock",
+  biometricNotAvailable: "Biometric not available on this device",
 };
 
 export type Locale = "zh" | "en";

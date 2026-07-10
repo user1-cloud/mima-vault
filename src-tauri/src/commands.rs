@@ -111,6 +111,18 @@ pub fn open_vault(
 }
 
 #[tauri::command]
+pub fn verify_password(
+    db: State<'_, DbState>,
+    master_password: String,
+) -> Result<bool, String> {
+    let conn_guard = db.conn.lock().map_err(|e| e.to_string())?;
+    let conn = conn_guard.as_ref().ok_or("No vault is open")?;
+    let config = db::load_vault_config(conn).ok_or("Vault config not found")?;
+    drop(conn_guard);
+    Ok(crypto::unlock_vault(&master_password, &config).is_some())
+}
+
+#[tauri::command]
 pub fn close_vault(
     db: State<'_, DbState>,
     vault_key: State<'_, VaultKey>,
