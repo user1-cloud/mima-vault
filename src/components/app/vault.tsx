@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import {
@@ -290,6 +290,61 @@ export function Vault() {
     },
     [items, reorderEntries]
   );
+
+  const pushedDetailRef = useRef<number | null>(null);
+  const dialogOpenRef = useRef(false);
+  dialogOpenRef.current = dialogOpen || settingsOpen;
+
+  useEffect(() => {
+    if (!selected) {
+      pushedDetailRef.current = null;
+      return;
+    }
+
+    if (pushedDetailRef.current === selected.id) return;
+    pushedDetailRef.current = selected.id;
+
+    window.history.pushState({ __mimaDetail: selected.id }, '', window.location.href);
+
+    const handlePopState = () => {
+      if (dialogOpenRef.current) return;
+      const { selectedId: currentId } = useApp.getState();
+      if (currentId !== null) {
+        selectEntry(null);
+        pushedDetailRef.current = null;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [selected?.id]);
+
+  useEffect(() => {
+    if (!dialogOpen) return;
+
+    window.history.pushState({ __mimaDialog: true }, '', window.location.href);
+
+    const handlePopState = () => {
+      setDialogOpen(false);
+      setEditingEntry(null);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [dialogOpen]);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+
+    window.history.pushState({ __mimaSettings: true }, '', window.location.href);
+
+    const handlePopState = () => {
+      setSettingsOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [settingsOpen]);
 
   return (
     <div className="h-full flex bg-surface relative overflow-hidden">

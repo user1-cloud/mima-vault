@@ -65,9 +65,7 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
   });
 
   useEffect(() => {
-    if (open) {
-      setOpen(true);
-    }
+    setOpen(open);
   }, [open, setOpen]);
 
   useEffect(() => {
