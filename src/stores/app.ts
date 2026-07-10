@@ -152,7 +152,6 @@ export const useApp = create<AppState>((set, get) => ({
 
   deleteVault: async (vaultId) => {
     await invoke("delete_vault", { vaultId });
-    await get().disableBiometric(vaultId);
     if (get().activeVault?.id === vaultId) {
       set({
         activeVault: null,
@@ -274,7 +273,11 @@ export const useApp = create<AppState>((set, get) => ({
         name: `vault_${vaultId}`,
         reason: "Verify your identity to unlock the vault",
       });
-      return await get().openVault(vaultId, password);
+      const ok = await get().openVault(vaultId, password);
+      if (!ok) {
+        await get().disableBiometric(vaultId);
+      }
+      return ok;
     } catch {
       return false;
     }

@@ -48,6 +48,15 @@ pub fn create_vault(
         return Err("A vault with this name already exists".into());
     }
 
+    {
+        let mut key_guard = vault_key.0.lock().map_err(|e| e.to_string())?;
+        if let Some(ref mut key) = *key_guard {
+            use zeroize::Zeroize;
+            key.zeroize();
+        }
+        *key_guard = None;
+    }
+    db.close_vault();
     db.open_vault(&vault_path)?;
 
     let meta_conn = meta.conn.lock().map_err(|e| e.to_string())?;
