@@ -1,7 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicedoc/tauri/main/.schemas/config.schema.json",
   "productName": "Mima",
-  "version": "0.1.0",
   "identifier": "com.mima.app",
   "build": {
     "frontendDist": "../dist",
