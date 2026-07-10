@@ -134,6 +134,15 @@ build_android() {
 
     local ANDROID_DIR="$PROJECT_DIR/src-tauri/gen/android"
 
+    # 从 Cargo.toml 同步版本号到 tauri.properties
+    local APP_VERSION
+    APP_VERSION=$(grep -m1 '^version' "$PROJECT_DIR/src-tauri/Cargo.toml" | sed 's/.*"\(.*\)"/\1/')
+    local VERSION_CODE
+    VERSION_CODE=$(echo "$APP_VERSION" | awk -F. '{ printf "%d%02d00", $1, $2 }')
+    sed -i "s/tauri\.android\.versionName=.*/tauri.android.versionName=$APP_VERSION/" "$ANDROID_DIR/app/tauri.properties"
+    sed -i "s/tauri\.android\.versionCode=.*/tauri.android.versionCode=$VERSION_CODE/" "$ANDROID_DIR/app/tauri.properties"
+    echo "  version synced: $APP_VERSION (code $VERSION_CODE)"
+
     # Universal (所有架构合一)
     echo "--- Android universal ---"
     cd "$PROJECT_DIR" && pnpm tauri android build
