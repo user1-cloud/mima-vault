@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import {
   DndContext,
+  DragOverlay,
   rectIntersection,
   KeyboardSensor,
   PointerSensor,
@@ -122,7 +123,7 @@ function SortableEntryItem({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition: isDragging ? undefined : transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
 
@@ -247,6 +248,7 @@ export function Vault() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const [activeDragEntry, setActiveDragEntry] = useState<Entry | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [vaultNameInput, setVaultNameInput] = useState("");
   const [bioAvailable, setBioAvailable] = useState(false);
@@ -362,9 +364,11 @@ export function Vault() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const handleDragStart = useCallback(() => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     setDragActive(true);
-  }, []);
+    const entry = items.find((e) => e.id === event.active.id);
+    if (entry) setActiveDragEntry(entry);
+  }, [items]);
 
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
@@ -380,6 +384,7 @@ export function Vault() {
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       setDragActive(false);
+      setActiveDragEntry(null);
       const { active, over } = event;
       if (!over || active.id === over.id) return;
       const orders: [number, number][] = items.map((e, i) => [e.id, i * 1000]);
@@ -527,14 +532,14 @@ export function Vault() {
                 items={items.map((e) => e.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence mode={dragActive ? "sync" : "popLayout"}>
                   {filtered.map((entry) => (
                     <motion.div
                       key={entry.id}
                       layout={!dragActive}
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
+                      exit={dragActive ? undefined : { opacity: 0, height: 0 }}
                       transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
                     >
                       <SortableEntryItem
@@ -546,6 +551,30 @@ export function Vault() {
                   ))}
                 </AnimatePresence>
               </SortableContext>
+              <DragOverlay style={{ pointerEvents: "none" }}>
+                {activeDragEntry ? (
+                  <div className="px-2 py-0.5">
+                    <div className="rounded-xl flex items-stretch overflow-hidden bg-surface-elevated border border-primary/30 shadow-lg">
+                      <div className="flex items-center justify-center w-9 shrink-0 cursor-grabbing text-muted-foreground bg-white/[0.06]">
+                        <GripVertical className="w-5 h-5" />
+                      </div>
+                      <div className="flex-1 flex items-center gap-3 p-3 pl-1 min-w-0">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${avatarColor(activeDragEntry.name)}`}>
+                          <span className="text-sm font-semibold">
+                            {activeDragEntry.name.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium truncate">{activeDragEntry.name}</p>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {activeDragEntry.username}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </DragOverlay>
             </DndContext>
           )}
         </div>
