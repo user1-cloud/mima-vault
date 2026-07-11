@@ -4,6 +4,7 @@ A modern, lightweight, local-first password manager built with Tauri v2. Support
 
 <details>
 <summary>中文（简体）</summary>
+
 # Mima (密码管理器)
 一款基于 Tauri v2 构建的现代轻量级本地优先密码管理器，一套代码即可编译为桌面端（Windows、macOS、Linux）以及 Android 应用。
 
