@@ -47,6 +47,7 @@ pub fn run() {
             commands::delete_entry,
             commands::reorder_entries,
             commands::generate_password,
+            commands::generate_totp_code,
             commands::copy_to_clipboard,
             commands::export_plaintext,
             commands::export_encrypted,

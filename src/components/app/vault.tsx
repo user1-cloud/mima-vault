@@ -25,6 +25,7 @@ import {
   Fingerprint,
   ShieldOff,
   Clock,
+  Timer,
 } from "lucide-react";
 import {
   DndContext,
@@ -45,6 +46,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useApp, type Entry } from "@/stores/app";
+import type { TotpCode } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { open } from "@tauri-apps/plugin-shell";
@@ -676,9 +678,12 @@ export function Vault() {
                     onCopy={() => handleCopy(selected.password, `pass-${selected.id}`)}
                     onToggleReveal={() => toggleShow(selected.id)}
                   />
+                  {selected.totp && (
+                    <TotpDisplay entryId={selected.id} index={2} />
+                  )}
                   {selected.url && (
                     <FieldCard
-                      index={2}
+                      index={3}
                       icon={<Globe className="w-4 h-4" />}
                       label={t("url")}
                       value={selected.url}
@@ -688,7 +693,7 @@ export function Vault() {
                   )}
                   {selected.notes && (
                     <FieldCard
-                      index={3}
+                      index={4}
                       icon={<FileText className="w-4 h-4" />}
                       label={t("notes")}
                       value={selected.notes}
@@ -910,7 +915,7 @@ function FieldCard({
           </CardTitle>
           <div className="flex items-center gap-2">
             <span
-              className={`flex-1 text-sm text-white/90 select-all ${
+              className={`flex-1 text-sm text-white/90 select-text ${
                 isSecret && !revealed
                   ? "font-mono tracking-[0.3em]"
                   : multiline
@@ -952,6 +957,157 @@ function FieldCard({
                 </IconButton>
               </Tooltip>
             </div>
+          </div>
+        </div>
+      </CardSpotlight>
+    </motion.div>
+  );
+}
+
+function TotpDisplay({ entryId, index }: { entryId: number; index: number }) {
+  const { generateTotpCode, copyToClipboard } = useApp();
+  const [totp, setTotp] = useState<TotpCode | null>(null);
+  const [error, setError] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let countdownTimer: ReturnType<typeof setInterval>;
+
+    const fetchCode = async () => {
+      try {
+        const data = await generateTotpCode(entryId);
+        if (cancelled) return;
+        setTotp(data);
+        setError(false);
+        setCountdown(data.remaining_seconds);
+      } catch {
+        if (!cancelled) {
+          setTotp(null);
+          setError(true);
+        }
+      }
+    };
+
+    fetchCode();
+
+    countdownTimer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          fetchCode();
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(countdownTimer);
+    };
+  }, [entryId, generateTotpCode]);
+
+  const handleCopy = useCallback(async () => {
+    if (!totp) return;
+    await copyToClipboard(totp.code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [totp, copyToClipboard]);
+
+  const radius = 12;
+  const circumference = 2 * Math.PI * radius;
+  const progress = totp ? countdown / totp.period : 1;
+
+  return (
+    <motion.div
+      custom={index}
+      variants={fieldCardVariants}
+      initial="hidden"
+      animate="visible"
+      className="group"
+    >
+      <CardSpotlight className="p-4 rounded-2xl border-white/[0.2]" radius={250}>
+        <div className="space-y-2">
+          <CardTitle>
+            <div className="flex items-center gap-2 -mt-3">
+              <span className="text-primary/70">
+                <Timer className="w-4 h-4" />
+              </span>
+              <span className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
+                {t("totp")}
+              </span>
+            </div>
+          </CardTitle>
+          <div className="flex items-center gap-3">
+            {error ? (
+              <span className="text-sm text-muted-foreground">
+                {t("totpError")}
+              </span>
+            ) : !totp ? (
+              <span className="text-sm text-muted-foreground animate-pulse">
+                {t("totpLoading")}
+              </span>
+            ) : (
+              <>
+                <span className="text-2xl font-mono tracking-[0.15em] text-white/90 select-text">
+                  {totp.code}
+                </span>
+                <div className="flex items-center gap-1.5 ml-auto">
+                  <svg width="28" height="28" className="shrink-0 -rotate-90">
+                    <circle
+                      cx="14"
+                      cy="14"
+                      r={radius}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="text-white/10"
+                    />
+                    <circle
+                      cx="14"
+                      cy="14"
+                      r={radius}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={circumference * (1 - progress)}
+                      strokeLinecap="round"
+                      className={progress < 0.25 ? "text-danger" : "text-primary"}
+                    />
+                  </svg>
+                  <span className="text-xs text-muted-foreground w-5 text-center tabular-nums">
+                    {countdown}
+                  </span>
+                  <Tooltip content={copied ? t("copied") : t("copy")} side="top">
+                    <IconButton className="h-7 w-7" onClick={handleCopy}>
+                      <AnimatePresence mode="wait">
+                        {copied ? (
+                          <motion.span
+                            key="check"
+                            initial={{ scale: 0, rotate: -30 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            exit={{ scale: 0, rotate: 30 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                          >
+                            <Check className="w-3.5 h-3.5 text-green-400" />
+                          </motion.span>
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </AnimatePresence>
+                    </IconButton>
+                  </Tooltip>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </CardSpotlight>

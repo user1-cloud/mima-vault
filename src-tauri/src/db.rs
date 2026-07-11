@@ -40,6 +40,8 @@ impl DbState {
                 url_cipher BLOB,
                 notes_nonce BLOB,
                 notes_cipher BLOB,
+                totp_nonce BLOB,
+                totp_cipher BLOB,
                 sort_order REAL NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT (datetime('now')),
                 updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -49,6 +51,8 @@ impl DbState {
         ).map_err(|e| e.to_string())?;
 
         let _ = conn.execute("ALTER TABLE entries ADD COLUMN sort_order REAL NOT NULL DEFAULT 0", []);
+        let _ = conn.execute("ALTER TABLE entries ADD COLUMN totp_nonce BLOB", []);
+        let _ = conn.execute("ALTER TABLE entries ADD COLUMN totp_cipher BLOB", []);
 
         let mut guard = self.conn.lock().map_err(|e| e.to_string())?;
         *guard = Some(conn);
@@ -102,6 +106,8 @@ pub struct EntryRow {
     pub url_cipher: Option<Vec<u8>>,
     pub notes_nonce: Option<Vec<u8>>,
     pub notes_cipher: Option<Vec<u8>>,
+    pub totp_nonce: Option<Vec<u8>>,
+    pub totp_cipher: Option<Vec<u8>>,
     pub sort_order: f64,
     pub created_at: String,
     pub updated_at: String,
@@ -114,6 +120,7 @@ pub fn insert_entry(
     password: (&[u8], &[u8]),
     url: Option<(&[u8], &[u8])>,
     notes: Option<(&[u8], &[u8])>,
+    totp: Option<(&[u8], &[u8])>,
 ) -> Result<i64, rusqlite::Error> {
     let min_order: f64 = conn
         .query_row(
@@ -126,14 +133,16 @@ pub fn insert_entry(
 
     conn.execute(
         "INSERT INTO entries (name_nonce, name_cipher, username_nonce, username_cipher,
-         password_nonce, password_cipher, url_nonce, url_cipher, notes_nonce, notes_cipher, sort_order)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+         password_nonce, password_cipher, url_nonce, url_cipher, notes_nonce, notes_cipher,
+         totp_nonce, totp_cipher, sort_order)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
         params![
             name.0, name.1,
             username.0, username.1,
             password.0, password.1,
             url.as_ref().map(|u| u.0), url.as_ref().map(|u| u.1),
             notes.as_ref().map(|n| n.0), notes.as_ref().map(|n| n.1),
+            totp.as_ref().map(|t| t.0), totp.as_ref().map(|t| t.1),
             new_order,
         ],
     )?;
@@ -148,17 +157,19 @@ pub fn update_entry(
     password: (&[u8], &[u8]),
     url: Option<(&[u8], &[u8])>,
     notes: Option<(&[u8], &[u8])>,
+    totp: Option<(&[u8], &[u8])>,
 ) -> Result<(), rusqlite::Error> {
     conn.execute(
         "UPDATE entries SET name_nonce=?1, name_cipher=?2, username_nonce=?3, username_cipher=?4,
          password_nonce=?5, password_cipher=?6, url_nonce=?7, url_cipher=?8, notes_nonce=?9,
-         notes_cipher=?10, updated_at=datetime('now') WHERE id=?11",
+         notes_cipher=?10, totp_nonce=?11, totp_cipher=?12, updated_at=datetime('now') WHERE id=?13",
         params![
             name.0, name.1,
             username.0, username.1,
             password.0, password.1,
             url.as_ref().map(|u| u.0), url.as_ref().map(|u| u.1),
             notes.as_ref().map(|n| n.0), notes.as_ref().map(|n| n.1),
+            totp.as_ref().map(|t| t.0), totp.as_ref().map(|t| t.1),
             id,
         ],
     )?;
@@ -186,7 +197,7 @@ pub fn fetch_entry(conn: &Connection, id: i64) -> Option<EntryRow> {
     conn.query_row(
         "SELECT id, name_nonce, name_cipher, username_nonce, username_cipher,
          password_nonce, password_cipher, url_nonce, url_cipher, notes_nonce, notes_cipher,
-         sort_order, created_at, updated_at FROM entries WHERE id = ?1",
+         totp_nonce, totp_cipher, sort_order, created_at, updated_at FROM entries WHERE id = ?1",
         params![id],
         |row| {
             Ok(EntryRow {
@@ -201,9 +212,11 @@ pub fn fetch_entry(conn: &Connection, id: i64) -> Option<EntryRow> {
                 url_cipher: row.get(8)?,
                 notes_nonce: row.get(9)?,
                 notes_cipher: row.get(10)?,
-                sort_order: row.get(11)?,
-                created_at: row.get(12)?,
-                updated_at: row.get(13)?,
+                totp_nonce: row.get(11)?,
+                totp_cipher: row.get(12)?,
+                sort_order: row.get(13)?,
+                created_at: row.get(14)?,
+                updated_at: row.get(15)?,
             })
         },
     )
@@ -215,7 +228,7 @@ pub fn fetch_all_entries(conn: &Connection) -> Vec<EntryRow> {
         .prepare(
             "SELECT id, name_nonce, name_cipher, username_nonce, username_cipher,
              password_nonce, password_cipher, url_nonce, url_cipher, notes_nonce, notes_cipher,
-             sort_order, created_at, updated_at FROM entries ORDER BY sort_order ASC",
+             totp_nonce, totp_cipher, sort_order, created_at, updated_at FROM entries ORDER BY sort_order ASC",
         )
         .unwrap();
     let rows = stmt
@@ -232,9 +245,11 @@ pub fn fetch_all_entries(conn: &Connection) -> Vec<EntryRow> {
                 url_cipher: row.get(8)?,
                 notes_nonce: row.get(9)?,
                 notes_cipher: row.get(10)?,
-                sort_order: row.get(11)?,
-                created_at: row.get(12)?,
-                updated_at: row.get(13)?,
+                totp_nonce: row.get(11)?,
+                totp_cipher: row.get(12)?,
+                sort_order: row.get(13)?,
+                created_at: row.get(14)?,
+                updated_at: row.get(15)?,
             })
         })
         .unwrap();

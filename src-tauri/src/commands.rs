@@ -211,6 +211,7 @@ pub struct ExportEntry {
     pub password: String,
     pub url: Option<String>,
     pub notes: Option<String>,
+    pub totp: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -221,9 +222,17 @@ pub struct DecryptedEntry {
     pub password: String,
     pub url: Option<String>,
     pub notes: Option<String>,
+    pub totp: Option<String>,
     pub sort_order: f64,
     pub created_at: String,
     pub updated_at: String,
+}
+
+#[derive(Serialize)]
+pub struct TotpCode {
+    pub code: String,
+    pub remaining_seconds: u64,
+    pub period: u64,
 }
 
 #[derive(Serialize)]
@@ -250,6 +259,11 @@ fn decrypt_entry_row(row: &db::EntryRow, key: &[u8; 32]) -> Result<DecryptedEntr
             .notes_cipher
             .as_ref()
             .zip(row.notes_nonce.as_ref())
+            .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
+        totp: row
+            .totp_cipher
+            .as_ref()
+            .zip(row.totp_nonce.as_ref())
             .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
         sort_order: row.sort_order,
         created_at: row.created_at.clone(),
@@ -303,6 +317,7 @@ pub fn create_entry(
     password: String,
     url: Option<String>,
     notes: Option<String>,
+    totp: Option<String>,
 ) -> Result<i64, String> {
     let (conn_guard, key_guard) = (
         db.conn.lock().map_err(|e| e.to_string())?,
@@ -316,6 +331,7 @@ pub fn create_entry(
     let password_enc = crypto::encrypt_field(&password, key);
     let url_enc = encrypt_optional(&url, key);
     let notes_enc = encrypt_optional(&notes, key);
+    let totp_enc = encrypt_optional(&totp, key);
 
     db::insert_entry(
         conn,
@@ -326,6 +342,9 @@ pub fn create_entry(
             .as_ref()
             .map(|(c, n)| (n.as_slice(), c.as_slice())),
         notes_enc
+            .as_ref()
+            .map(|(c, n)| (n.as_slice(), c.as_slice())),
+        totp_enc
             .as_ref()
             .map(|(c, n)| (n.as_slice(), c.as_slice())),
     )
@@ -342,6 +361,7 @@ pub fn update_entry(
     password: String,
     url: Option<String>,
     notes: Option<String>,
+    totp: Option<String>,
 ) -> Result<(), String> {
     let (conn_guard, key_guard) = (
         db.conn.lock().map_err(|e| e.to_string())?,
@@ -355,6 +375,7 @@ pub fn update_entry(
     let password_enc = crypto::encrypt_field(&password, key);
     let url_enc = encrypt_optional(&url, key);
     let notes_enc = encrypt_optional(&notes, key);
+    let totp_enc = encrypt_optional(&totp, key);
 
     db::update_entry(
         conn,
@@ -366,6 +387,9 @@ pub fn update_entry(
             .as_ref()
             .map(|(c, n)| (n.as_slice(), c.as_slice())),
         notes_enc
+            .as_ref()
+            .map(|(c, n)| (n.as_slice(), c.as_slice())),
+        totp_enc
             .as_ref()
             .map(|(c, n)| (n.as_slice(), c.as_slice())),
     )
@@ -415,6 +439,54 @@ pub fn reorder_entries(
 pub fn copy_to_clipboard(app: tauri::AppHandle, text: String) -> Result<(), String> {
     use tauri_plugin_clipboard_manager::ClipboardExt;
     app.clipboard().write_text(text).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn generate_totp_code(
+    db: State<'_, DbState>,
+    vault_key: State<'_, VaultKey>,
+    entry_id: i64,
+) -> Result<TotpCode, String> {
+    use totp_rs::{Algorithm, TOTP, Secret};
+
+    let (conn_guard, key_guard) = (
+        db.conn.lock().map_err(|e| e.to_string())?,
+        vault_key.0.lock().map_err(|e| e.to_string())?,
+    );
+    let conn = conn_guard.as_ref().ok_or("No vault is open")?;
+    let key = key_guard.as_ref().ok_or("Vault is locked")?;
+    let row = db::fetch_entry(conn, entry_id).ok_or("Entry not found")?;
+
+    let totp_secret = row
+        .totp_cipher
+        .as_ref()
+        .zip(row.totp_nonce.as_ref())
+        .and_then(|(c, n)| crypto::decrypt_field(c, n, key))
+        .ok_or("No TOTP secret stored for this entry")?;
+
+    let totp = if totp_secret.starts_with("otpauth://") {
+        TOTP::from_url(&totp_secret).map_err(|e| format!("Invalid otpauth URL: {}", e))?
+    } else {
+        let secret = Secret::Encoded(totp_secret)
+            .to_bytes()
+            .map_err(|e| format!("Invalid base32 secret: {}", e))?;
+        TOTP::new(Algorithm::SHA1, 6, 1, 30, secret, None, "".into())
+            .map_err(|e| format!("TOTP setup failed: {}", e))?
+    };
+
+    let code = totp.generate_current().map_err(|e| format!("TOTP generation failed: {}", e))?;
+    let period = totp.step;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs();
+    let remaining_seconds = period - (now % period);
+
+    Ok(TotpCode {
+        code,
+        remaining_seconds,
+        period,
+    })
 }
 
 // ─── Import / Export ───
@@ -476,6 +548,11 @@ pub fn export_plaintext(
                     .notes_cipher
                     .as_ref()
                     .zip(row.notes_nonce.as_ref())
+                    .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
+                totp: row
+                    .totp_cipher
+                    .as_ref()
+                    .zip(row.totp_nonce.as_ref())
                     .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
             })
         })
@@ -544,6 +621,11 @@ pub fn export_encrypted(
                     .as_ref()
                     .zip(row.notes_nonce.as_ref())
                     .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
+                totp: row
+                    .totp_cipher
+                    .as_ref()
+                    .zip(row.totp_nonce.as_ref())
+                    .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
             })
         })
         .collect();
@@ -606,6 +688,7 @@ pub fn confirm_import(
         let password_enc = crypto::encrypt_field(&entry.password, key);
         let url_enc = encrypt_optional(&entry.url, key);
         let notes_enc = encrypt_optional(&entry.notes, key);
+        let totp_enc = encrypt_optional(&entry.totp, key);
 
         db::insert_entry(
             conn,
@@ -616,6 +699,9 @@ pub fn confirm_import(
                 .as_ref()
                 .map(|(c, n)| (n.as_slice(), c.as_slice())),
             notes_enc
+                .as_ref()
+                .map(|(c, n)| (n.as_slice(), c.as_slice())),
+            totp_enc
                 .as_ref()
                 .map(|(c, n)| (n.as_slice(), c.as_slice())),
         )
@@ -678,6 +764,7 @@ pub fn confirm_encrypted_import(
         let password_enc = crypto::encrypt_field(&entry.password, key);
         let url_enc = encrypt_optional(&entry.url, key);
         let notes_enc = encrypt_optional(&entry.notes, key);
+        let totp_enc = encrypt_optional(&entry.totp, key);
 
         db::insert_entry(
             conn,
@@ -688,6 +775,9 @@ pub fn confirm_encrypted_import(
                 .as_ref()
                 .map(|(c, n)| (n.as_slice(), c.as_slice())),
             notes_enc
+                .as_ref()
+                .map(|(c, n)| (n.as_slice(), c.as_slice())),
+            totp_enc
                 .as_ref()
                 .map(|(c, n)| (n.as_slice(), c.as_slice())),
         )

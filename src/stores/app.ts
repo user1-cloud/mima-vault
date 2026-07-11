@@ -15,6 +15,7 @@ export interface Entry {
   password: string;
   url: string | null;
   notes: string | null;
+  totp: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -33,6 +34,13 @@ export interface ExportEntry {
   password: string;
   url: string | null;
   notes: string | null;
+  totp: string | null;
+}
+
+export interface TotpCode {
+  code: string;
+  remaining_seconds: number;
+  period: number;
 }
 
 export interface ImportPreviewData {
@@ -66,6 +74,7 @@ interface AppState {
   deleteEntry: (id: number) => Promise<void>;
   reorderEntries: (orders: [number, number][]) => Promise<void>;
   generatePassword: (length?: number) => Promise<string>;
+  generateTotpCode: (entryId: number) => Promise<TotpCode>;
   copyToClipboard: (text: string) => Promise<void>;
   setSearch: (q: string) => void;
   selectEntry: (id: number | null) => void;
@@ -173,8 +182,9 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   createEntry: async (data) => {
-    await invoke("create_entry", { ...data });
+    const id = await invoke<number>("create_entry", { ...data });
     await get().loadEntries();
+    set({ selectedId: id });
   },
 
   updateEntry: async (id, data) => {
@@ -195,6 +205,10 @@ export const useApp = create<AppState>((set, get) => ({
 
   generatePassword: async (length) => {
     return await invoke<string>("generate_password", { length });
+  },
+
+  generateTotpCode: async (entryId) => {
+    return await invoke<TotpCode>("generate_totp_code", { entryId });
   },
 
   copyToClipboard: async (text) => {

@@ -102,6 +102,14 @@ const en: Translations = {
   autoLock15m: "After 15 minutes",
   autoLock30m: "After 30 minutes",
   autoLock1h: "After 1 hour",
+  totp: "TOTP",
+  totpSecret: "TOTP Secret",
+  totpPlaceholder: "Paste otpauth URL or base32 secret key",
+  totpLoading: "Generating...",
+  totpError: "Failed to generate TOTP code",
+  scanQr: "Scan QR code from clipboard",
+  qrNotFound: "No QR code found in clipboard",
+  qrScanFailed: "Scan failed. Make sure you have a QR code screenshot in clipboard.",
 };
 
 export default en;

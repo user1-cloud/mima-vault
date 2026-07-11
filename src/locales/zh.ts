@@ -100,6 +100,14 @@ const zh = {
   autoLock15m: "15 分钟后",
   autoLock30m: "30 分钟后",
   autoLock1h: "1 小时后",
+  totp: "TOTP",
+  totpSecret: "TOTP 密钥",
+  totpPlaceholder: "粘贴 otpauth 链接或 Base32 密钥",
+  totpLoading: "正在生成...",
+  totpError: "TOTP 验证码生成失败",
+  scanQr: "从剪贴板扫描二维码",
+  qrNotFound: "剪贴板中未识别到二维码",
+  qrScanFailed: "扫描失败，请确认剪贴板中有二维码截图",
 };
 
 export type Translations = typeof zh;

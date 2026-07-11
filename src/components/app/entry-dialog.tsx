@@ -3,10 +3,12 @@ import { motion, AnimatePresence } from "motion/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Wand2, Eye, EyeOff, Loader2, ScanLine } from "lucide-react";
+import jsQR from "jsqr";
 import { useApp, type Entry } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
+import { IconButton } from "@/components/ui/icon-button";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
@@ -25,6 +27,7 @@ const formSchema = z.object({
   password: z.string().min(1, t("passwordRequired")),
   url: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
+  totp: z.string().optional().or(z.literal("")),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -52,6 +55,7 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
   const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [scanning, setScanning] = useState(false);
 
   const {
     register,
@@ -83,9 +87,10 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
           password: entry.password,
           url: entry.url ?? "",
           notes: entry.notes ?? "",
+          totp: entry.totp ?? "",
         });
       } else {
-        reset({ name: "", username: "", password: "", url: "", notes: "" });
+        reset({ name: "", username: "", password: "", url: "", notes: "", totp: "" });
       }
       setShowPassword(false);
     }
@@ -97,6 +102,37 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
     setValue("password", pwd);
     setGenerating(false);
   }, [generatePassword, setValue]);
+
+  const handleScanQr = useCallback(async () => {
+    setScanning(true);
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        for (const type of item.types) {
+          if (!type.startsWith("image/")) continue;
+          const blob = await item.getType(type);
+          const bitmap = await createImageBitmap(blob);
+          const canvas = document.createElement("canvas");
+          canvas.width = bitmap.width;
+          canvas.height = bitmap.height;
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(bitmap, 0, 0);
+          const imageData = ctx.getImageData(0, 0, bitmap.width, bitmap.height);
+          const code = jsQR(imageData.data, imageData.width, imageData.height);
+          bitmap.close();
+          if (code?.data.startsWith("otpauth://")) {
+            setValue("totp", code.data);
+            return;
+          }
+        }
+      }
+      alert(t("qrNotFound"));
+    } catch (e) {
+      alert(t("qrScanFailed"));
+    } finally {
+      setScanning(false);
+    }
+  }, [setValue]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -111,6 +147,7 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
           ...data,
           url: data.url || null,
           notes: data.notes || null,
+          totp: data.totp || null,
         };
         if (entry) {
           await updateEntry(entry.id, payload);
@@ -199,33 +236,27 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
                   className="pr-10 font-mono transition-shadow duration-300 focus:shadow-[0_0_15px_-3px_oklch(0.65_0.2_250/0.3)]"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <motion.button
+                  <IconButton
                     type="button"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-muted-foreground hover:text-white flex items-center justify-center"
+                    className="text-muted-foreground"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </motion.button>
+                  </IconButton>
                 </div>
               </div>
               <Tooltip content={t("generatePassword")} side="bottom">
-                <motion.div whileHover={{ scale: 1.1, rotate: 5 }} whileTap={{ scale: 0.9 }}>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={handleGenerate}
-                    disabled={generating}
-                  >
-                    {generating ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Wand2 className="w-4 h-4" />
-                    )}
-                  </Button>
-                </motion.div>
+                <IconButton
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={generating}
+                >
+                  {generating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Wand2 className="w-4 h-4" />
+                  )}
+                </IconButton>
               </Tooltip>
             </div>
             <AnimatePresence>
@@ -269,11 +300,38 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
             <textarea
               id="notes"
               {...register("notes")}
-              rows={2}
+              rows={5}
               autoComplete="off"
               className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-shadow duration-300 focus:shadow-[0_0_15px_-3px_oklch(0.65_0.2_250/0.3)]"
               placeholder={t("notesPlaceholder")}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="totp">{t("totpSecret")} ({t("optional")})</Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Input
+                  id="totp"
+                  {...register("totp")}
+                  placeholder={t("totpPlaceholder")}
+                  className="font-mono transition-shadow duration-300 focus:shadow-[0_0_15px_-3px_oklch(0.65_0.2_250/0.3)]"
+                />
+              </div>
+              <Tooltip content={t("scanQr")} side="bottom">
+                <IconButton
+                  type="button"
+                  onClick={handleScanQr}
+                  disabled={scanning}
+                >
+                  {scanning ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <ScanLine className="w-4 h-4" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            </div>
           </div>
 
           <div className="flex gap-3 justify-end pt-2">

@@ -29,6 +29,9 @@ zeroize = { version = "1", features = ["derive"] }
 # Database
 rusqlite = { version = "0.31", features = ["bundled"] }
 
+# TOTP
+totp-rs = { version = "5", features = ["gen_secret", "otpauth"] }
+
 # System keychain
 keyring = "3"
 

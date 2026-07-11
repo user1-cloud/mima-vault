@@ -6,7 +6,7 @@ import mimaIcon from "@/assets/mima.svg";
 import { useApp } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
-import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { StatefulButton } from "@/components/ui/stateful-button";
 import { CardSpotlight } from "@/components/ui/card-spotlight";
 import { Input } from "@/components/ui/input";
@@ -152,15 +152,13 @@ export function Unlock() {
                   autoFocus
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <motion.button
+                  <IconButton
                     type="button"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
                     onClick={() => setShowPassword(!showPassword)}
-                    className="text-muted-foreground hover:text-white transition-colors flex items-center justify-center"
+                    className="text-muted-foreground"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </motion.button>
+                  </IconButton>
                 </div>
               </div>
             </div>
@@ -198,13 +196,11 @@ export function Unlock() {
               transition={{ delay: 0.32 }}
               className="flex justify-center"
             >
-              <motion.button
+              <IconButton
                 type="button"
-                whileHover={{ scale: 1.08 }}
-                whileTap={{ scale: 0.92 }}
                 onClick={handleBiometricUnlock}
                 disabled={biometricLoading}
-                className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+                className="w-12 h-12 rounded-full bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 hover:text-primary disabled:opacity-50"
               >
                 {biometricLoading ? (
                   <motion.div
@@ -216,7 +212,7 @@ export function Unlock() {
                 ) : (
                   <Fingerprint className="w-6 h-6" />
                 )}
-              </motion.button>
+              </IconButton>
             </motion.div>
           )}
 
