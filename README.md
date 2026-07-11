@@ -399,3 +399,4 @@ All commands return `Result<T, String>` — the frontend receives errors as thro
 | `confirm_encrypted_import` | Import entries from an encrypted backup file |
 
 ## License
+MIT
