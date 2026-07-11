@@ -459,7 +459,7 @@ export function Vault() {
         speedScale={0.4}
       />
       {/* Sidebar */}
-      <div className={`w-full md:w-72 lg:w-80 border-r border-border flex flex-col bg-surface-elevated relative z-10 ${selected ? 'hidden md:flex' : ''}`}>
+      <div className={`w-full md:w-72 lg:w-80 border-r border-border flex flex-col relative z-10 ${selected ? 'hidden md:flex' : ''}`}>
         {/* Header */}
         <div className="p-4 border-b border-border space-y-3">
           <div className="flex items-center justify-between">
@@ -553,26 +553,34 @@ export function Vault() {
               </SortableContext>
               <DragOverlay style={{ pointerEvents: "none" }}>
                 {activeDragEntry ? (
-                  <div className="px-2 py-0.5">
-                    <div className="rounded-xl flex items-stretch overflow-hidden bg-surface-elevated border border-primary/30 shadow-lg">
-                      <div className="flex items-center justify-center w-9 shrink-0 cursor-grabbing text-muted-foreground bg-white/[0.06]">
-                        <GripVertical className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 flex items-center gap-3 p-3 pl-1 min-w-0">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${avatarColor(activeDragEntry.name)}`}>
-                          <span className="text-sm font-semibold">
-                            {activeDragEntry.name.charAt(0).toUpperCase()}
-                          </span>
+                  (() => {
+                    const isSelected = activeDragEntry.id === selectedId;
+                    return (
+                      <div className="px-2 py-0.5">
+                        <div className={`rounded-xl flex items-stretch overflow-hidden shadow-lg ${isSelected ? "bg-primary/10 ring-1 ring-primary/20" : "bg-surface-elevated border border-primary/30"}`}>
+                          <div className="flex items-center justify-center w-9 shrink-0 cursor-grabbing text-muted-foreground bg-white/[0.06]">
+                            <GripVertical className="w-5 h-5" />
+                          </div>
+                          <div className="flex-1 flex items-center gap-3 p-3 pl-1 min-w-0">
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isSelected ? "bg-primary/20 text-primary ring-2 ring-primary/20" : avatarColor(activeDragEntry.name)}`}>
+                              <span className="text-sm font-semibold">
+                                {activeDragEntry.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">{activeDragEntry.name}</p>
+                              <p className="text-xs text-muted-foreground truncate mt-0.5">
+                                {activeDragEntry.username}
+                              </p>
+                            </div>
+                            {isSelected && (
+                              <div className="w-1.5 h-8 rounded-full bg-primary shrink-0" />
+                            )}
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{activeDragEntry.name}</p>
-                          <p className="text-xs text-muted-foreground truncate mt-0.5">
-                            {activeDragEntry.username}
-                          </p>
-                        </div>
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })()
                 ) : null}
               </DragOverlay>
             </DndContext>
