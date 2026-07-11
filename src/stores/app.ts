@@ -47,6 +47,7 @@ interface AppState {
   entries: Entry[];
   searchQuery: string;
   selectedId: number | null;
+  autoLockTimeout: number;
 
   loadVaults: () => Promise<void>;
   createVault: (name: string, password: string) => Promise<VaultInfo>;
@@ -88,6 +89,7 @@ interface AppState {
   biometricUnlock: (vaultId: number) => Promise<boolean>;
   disableBiometric: (vaultId: number) => Promise<void>;
   verifyPassword: (password: string) => Promise<boolean>;
+  setAutoLockTimeout: (timeout: number) => void;
 }
 
 export const useApp = create<AppState>((set, get) => ({
@@ -97,6 +99,7 @@ export const useApp = create<AppState>((set, get) => ({
   entries: [],
   searchQuery: "",
   selectedId: null,
+  autoLockTimeout: Number(localStorage.getItem("mima-auto-lock") ?? 300),
 
   loadVaults: async () => {
     const vaults = await invoke<VaultInfo[]>("list_vaults");
@@ -295,5 +298,10 @@ export const useApp = create<AppState>((set, get) => ({
     return await invoke<boolean>("verify_password", {
       masterPassword: password,
     });
+  },
+
+  setAutoLockTimeout: (timeout) => {
+    localStorage.setItem("mima-auto-lock", String(timeout));
+    set({ autoLockTimeout: timeout });
   },
 }));

@@ -211,7 +211,7 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
                 </div>
               </div>
               <Tooltip content={t("generatePassword")} side="bottom">
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <motion.div whileHover={{ scale: 1.1, rotate: 5 }} whileTap={{ scale: 0.9 }}>
                   <Button
                     type="button"
                     variant="outline"

@@ -64,6 +64,8 @@ const zh = {
   deleteVault: "删除密码库",
   confirmDeleteVault: "确认删除密码库",
   confirmDeleteVaultMessage: "确定要删除密码库「{name}」吗？所有数据将永久丢失。",
+  deleteVaultWarning: "此操作不可逆，密码库中的所有数据将被永久销毁。请稍候再确认。",
+  deleteVaultCountdown: "确认删除（{n}秒）",
   back: "返回",
   export: "导出",
   import: "导入",
@@ -90,6 +92,14 @@ const zh = {
   biometricFailed: "生物识别验证失败",
   enterPasswordToEnable: "输入主密码以启用生物识别",
   biometricNotAvailable: "此设备不支持生物识别",
+  autoLock: "自动锁定",
+  autoLockDesc: "一段时间不活动后自动锁定密码库。",
+  autoLockNever: "从不",
+  autoLock1m: "1 分钟后",
+  autoLock5m: "5 分钟后",
+  autoLock15m: "15 分钟后",
+  autoLock30m: "30 分钟后",
+  autoLock1h: "1 小时后",
 };
 
 export type Translations = typeof zh;

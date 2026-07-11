@@ -34,3 +34,4 @@ keyring = "3"
 
 # Biometric authentication
 tauri-plugin-biometry = "0.2"
+tauri-plugin-idlemonitor = "0.2"

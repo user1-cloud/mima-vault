@@ -66,6 +66,8 @@ const en: Translations = {
   deleteVault: "Delete Vault",
   confirmDeleteVault: "Delete Vault",
   confirmDeleteVaultMessage: "Are you sure you want to delete \"{name}\"? All data will be permanently lost.",
+  deleteVaultWarning: "This action is irreversible. All data in this vault will be permanently destroyed. Please wait before confirming.",
+  deleteVaultCountdown: "Confirm ({n}s)",
   back: "Back",
   export: "Export",
   import: "Import",
@@ -92,6 +94,14 @@ const en: Translations = {
   biometricFailed: "",
   enterPasswordToEnable: "",
   biometricNotAvailable: "",
+  autoLock: "Auto-Lock",
+  autoLockDesc: "Automatically lock the vault after a period of inactivity.",
+  autoLockNever: "Never",
+  autoLock1m: "After 1 minute",
+  autoLock5m: "After 5 minutes",
+  autoLock15m: "After 15 minutes",
+  autoLock30m: "After 30 minutes",
+  autoLock1h: "After 1 hour",
 };
 
 export default en;

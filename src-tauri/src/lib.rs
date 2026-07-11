@@ -13,6 +13,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_biometry::init())
+        .plugin(tauri_plugin_idlemonitor::init())
         .manage(commands::VaultKey(Mutex::new(None)))
         .setup(|app| {
             let app_dir = app.path().app_data_dir().expect("failed to get app data dir");

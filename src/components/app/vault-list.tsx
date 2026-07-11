@@ -13,6 +13,7 @@ import { useApp } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { StatefulButton } from "@/components/ui/stateful-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
@@ -54,10 +55,27 @@ export function VaultList() {
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState(5);
 
   useEffect(() => {
     loadVaults().finally(() => setLoading(false));
   }, [loadVaults]);
+
+  useEffect(() => {
+    if (deleteId !== null) {
+      setCountdown(5);
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [deleteId]);
 
   const handleCreate = useCallback(async () => {
     if (!vaultName.trim()) {
@@ -264,22 +282,14 @@ export function VaultList() {
                     </p>
                   </div>
                   <Tooltip content={t("deleteVault")} side="bottom">
-                    <motion.div
-                      whileHover={{ scale: 1.15 }}
-                      whileTap={{ scale: 0.85 }}
+                    <IconButton
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteId(vault.id);
+                      }}
                     >
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className=""
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteId(vault.id);
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-muted-foreground hover:text-danger" />
-                      </Button>
-                    </motion.div>
+                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-danger" />
+                    </IconButton>
                   </Tooltip>
                 </motion.div>
               ))}
@@ -330,15 +340,21 @@ export function VaultList() {
               })}
             </DialogDescription>
           </DialogHeader>
+          <div className="bg-danger/5 border border-danger/20 rounded-lg p-3 text-sm text-danger/90 text-center">
+            {t("deleteVaultWarning")}
+          </div>
           <DialogFooter className="sm:justify-center gap-3">
             <Button variant="outline" onClick={() => setDeleteId(null)}>
               {t("cancel")}
             </Button>
             <Button
               variant="destructive"
+              disabled={countdown > 0}
               onClick={() => deleteId !== null && handleDelete(deleteId)}
             >
-              {t("deleteVault")}
+              {countdown > 0
+                ? t("deleteVaultCountdown", { n: countdown })
+                : t("deleteVault")}
             </Button>
           </DialogFooter>
         </DialogContent>

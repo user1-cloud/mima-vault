@@ -10,6 +10,7 @@
     "shell:allow-open",
     "dialog:default",
     "biometry:default",
+    "idlemonitor:default",
     {
       "identifier": "biometry:allow-set-data",
       "allow": [{ "domain": "mima" }]

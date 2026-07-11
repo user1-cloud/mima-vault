@@ -2625,6 +2625,48 @@
           "markdownDescription": "Denies the save command without any pre-configured scope."
         },
         {
+          "description": "Default permissions for the idlemonitor plugin.\nAllows starting/stopping monitoring and querying idle time.\n\n#### This default permission set includes:\n\n- `allow-start`\n- `allow-stop`\n- `allow-get-idle-time`",
+          "type": "string",
+          "const": "idlemonitor:default",
+          "markdownDescription": "Default permissions for the idlemonitor plugin.\nAllows starting/stopping monitoring and querying idle time.\n\n#### This default permission set includes:\n\n- `allow-start`\n- `allow-stop`\n- `allow-get-idle-time`"
+        },
+        {
+          "description": "Enables the get_idle_time command without any pre-configured scope.",
+          "type": "string",
+          "const": "idlemonitor:allow-get-idle-time",
+          "markdownDescription": "Enables the get_idle_time command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the start command without any pre-configured scope.",
+          "type": "string",
+          "const": "idlemonitor:allow-start",
+          "markdownDescription": "Enables the start command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "idlemonitor:allow-stop",
+          "markdownDescription": "Enables the stop command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the get_idle_time command without any pre-configured scope.",
+          "type": "string",
+          "const": "idlemonitor:deny-get-idle-time",
+          "markdownDescription": "Denies the get_idle_time command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the start command without any pre-configured scope.",
+          "type": "string",
+          "const": "idlemonitor:deny-start",
+          "markdownDescription": "Denies the start command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the stop command without any pre-configured scope.",
+          "type": "string",
+          "const": "idlemonitor:deny-stop",
+          "markdownDescription": "Denies the stop command without any pre-configured scope."
+        },
+        {
           "description": "This permission set configures which\nshell functionality is exposed by default.\n\n#### Granted Permissions\n\nIt allows to use the `open` functionality with a reasonable\nscope pre-configured. It will allow opening `http(s)://`,\n`tel:` and `mailto:` links.\n\n#### This default permission set includes:\n\n- `allow-open`",
           "type": "string",
           "const": "shell:default",

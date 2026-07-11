@@ -3,6 +3,7 @@ import { Globe, Check, Search } from "lucide-react";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -62,9 +63,9 @@ export function LangSwitcher() {
   return (
     <>
       <Tooltip content={t("language")} side="bottom">
-        <Button variant="ghost" size="icon" onClick={handleOpen}>
+        <IconButton onClick={handleOpen}>
           <Globe className="w-4 h-4" />
-        </Button>
+        </IconButton>
       </Tooltip>
 
       <Dialog open={open} onOpenChange={(o) => { if (!o) handleCancel(); }}>

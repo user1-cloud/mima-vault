@@ -24,6 +24,7 @@ import {
   GripVertical,
   Fingerprint,
   ShieldOff,
+  Clock,
 } from "lucide-react";
 import {
   DndContext,
@@ -49,7 +50,9 @@ import { t } from "@/lib/i18n";
 import { open } from "@tauri-apps/plugin-shell";
 import { save, open as openFile } from "@tauri-apps/plugin-dialog";
 import { Button } from "@/components/ui/button";
+import { IconButton } from "@/components/ui/icon-button";
 import { StatefulButton } from "@/components/ui/stateful-button";
+import { useAutoLock } from "./use-auto-lock";
 
 import { Tooltip } from "@/components/ui/tooltip";
 import { CardTitle } from "@/components/ui/card-hover-effect";
@@ -79,6 +82,22 @@ function useDebounce<T>(value: T, ms: number): T {
   return debounced;
 }
 
+function avatarColor(name: string): string {
+  const colors = [
+    "bg-blue-500/20 text-blue-400",
+    "bg-emerald-500/20 text-emerald-400",
+    "bg-violet-500/20 text-violet-400",
+    "bg-amber-500/20 text-amber-400",
+    "bg-rose-500/20 text-rose-400",
+    "bg-cyan-500/20 text-cyan-400",
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
 function SortableEntryItem({
   entry,
   isSelected,
@@ -105,44 +124,58 @@ function SortableEntryItem({
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <button
-        type="button"
-        onClick={onSelect}
-        className={`w-full text-left p-3 border-b border-border/50 transition-colors group relative ${
+    <div ref={setNodeRef} style={style} className="px-2 py-0.5">
+      <motion.div
+        whileHover={{ scale: 1.015 }}
+        whileTap={{ scale: 0.985 }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        className={`rounded-xl flex items-stretch overflow-hidden ${
           isSelected
-            ? "bg-primary/10 border-l-2 border-l-primary"
-            : "border-l-2 border-l-transparent"
+            ? "bg-primary/10 ring-1 ring-primary/20"
+            : "hover:bg-white/[0.04]"
         }`}
       >
-        <div className="flex items-center gap-3">
-          <div
-            {...attributes}
-            {...listeners}
-            className="shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
-          >
-            <GripVertical className="w-4 h-4" />
-          </div>
-          <div
-            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+        <div
+          {...attributes}
+          {...listeners}
+          className="flex items-center justify-center w-9 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-muted-foreground transition-colors touch-none bg-white/[0.06]"
+        >
+          <GripVertical className="w-5 h-5" />
+        </div>
+        <button
+          type="button"
+          onClick={onSelect}
+          className="flex-1 flex items-center gap-3 p-3 pl-1 text-left min-w-0"
+        >
+          <motion.div
+            whileHover={{ scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 400, damping: 15 }}
+            className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
               isSelected
-                ? "bg-primary/20 text-primary"
-                : "bg-accent text-muted-foreground"
+                ? "bg-primary/20 text-primary ring-2 ring-primary/20"
+                : avatarColor(entry.name)
             }`}
           >
-            <span className="text-xs font-semibold">
+            <span className="text-sm font-semibold">
               {entry.name.charAt(0).toUpperCase()}
             </span>
-          </div>
-          <div className="min-w-0">
+          </motion.div>
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium truncate">{entry.name}</p>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="text-xs text-muted-foreground truncate mt-0.5">
               {entry.username}
             </p>
           </div>
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-      </button>
+          {isSelected && (
+            <motion.div
+              initial={{ scale: 0, height: 0 }}
+              animate={{ scale: 1, height: 32 }}
+              transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              className="w-1.5 rounded-full bg-primary shrink-0"
+            />
+          )}
+        </button>
+      </motion.div>
     </div>
   );
 }
@@ -192,6 +225,8 @@ export function Vault() {
     checkBiometricEnabled,
     enableBiometric,
     disableBiometric,
+    autoLockTimeout,
+    setAutoLockTimeout,
   } = useApp();
 
   useLocale();
@@ -240,6 +275,8 @@ export function Vault() {
     await closeVault();
     navigate("/", { replace: true });
   }, [closeVault, navigate]);
+
+  useAutoLock(autoLockTimeout, handleClose);
 
   const handleCopy = useCallback(
     async (text: string, field: string) => {
@@ -418,26 +455,20 @@ export function Vault() {
                 className="text-lg font-semibold tracking-tight truncate [&_div]:text-lg [&_div]:mt-0"
               />
               <Tooltip content={t("vaultSettings")} side="bottom">
-                <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
-                    onClick={handleOpenSettings}
-                  >
-                    <Settings className="w-3.5 h-3.5" />
-                  </Button>
-                </motion.div>
+                <IconButton
+                  className="h-7 w-7 shrink-0"
+                  onClick={handleOpenSettings}
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                </IconButton>
               </Tooltip>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <LangSwitcher />
               <Tooltip content={t("lockVault")} side="bottom">
-                <motion.div whileHover={{ scale: 1.1, rotate: 5 }} whileTap={{ scale: 0.9 }}>
-                  <Button variant="ghost" size="icon" onClick={handleClose}>
+                <IconButton onClick={handleClose}>
                     <LogOut className="w-4 h-4" />
-                  </Button>
-                </motion.div>
+                  </IconButton>
               </Tooltip>
             </div>
           </div>
@@ -486,14 +517,15 @@ export function Vault() {
                 items={items.map((e) => e.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <AnimatePresence>
+                <AnimatePresence mode="popLayout">
                   {filtered.map((entry) => (
                     <motion.div
                       key={entry.id}
+                      layout
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
                     >
                       <SortableEntryItem
                         entry={entry}
@@ -519,9 +551,7 @@ export function Vault() {
               {t("newEntry")}
             </StatefulButton>
             <Tooltip content={t("export")} side="bottom">
-              <Button
-                variant="ghost"
-                size="icon"
+              <IconButton
                 onClick={async () => {
                   const p = await save({
                     defaultPath: `${activeVault?.name ?? "mima"}-export.json`,
@@ -535,12 +565,10 @@ export function Vault() {
                 }}
               >
                 <Download className="w-4 h-4" />
-              </Button>
+              </IconButton>
             </Tooltip>
             <Tooltip content={t("import")} side="bottom">
-              <Button
-                variant="ghost"
-                size="icon"
+              <IconButton
                 onClick={async () => {
                   const p = await openFile({
                     filters: [
@@ -560,7 +588,7 @@ export function Vault() {
                 }}
               >
                 <Upload className="w-4 h-4" />
-              </Button>
+              </IconButton>
             </Tooltip>
           </div>
         </div>
@@ -581,11 +609,9 @@ export function Vault() {
               <div className="space-y-6">
                 <div className="md:hidden -mb-3">
                   <Tooltip content={t("back")} side="bottom">
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                      <Button variant="ghost" size="icon" onClick={() => selectEntry(null)}>
-                        <ArrowLeft className="w-4 h-4" />
-                      </Button>
-                    </motion.div>
+                    <IconButton onClick={() => selectEntry(null)}>
+                      <ArrowLeft className="w-4 h-4" />
+                    </IconButton>
                   </Tooltip>
                 </div>
                 {/* Header */}
@@ -623,15 +649,9 @@ export function Vault() {
                     </div>
                   </div>
                   <Tooltip content={t("editEntry")} side="left">
-                    <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(selected)}
-                      >
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                    </motion.div>
+                    <IconButton onClick={() => handleEdit(selected)}>
+                      <Pencil className="w-4 h-4" />
+                    </IconButton>
                   </Tooltip>
                 </div>
 
@@ -787,6 +807,26 @@ export function Vault() {
                 </div>
               </>
             )}
+            <div className="border-t border-border" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">{t("autoLock")}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{t("autoLockDesc")}</p>
+              <select
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                value={autoLockTimeout}
+                onChange={(e) => setAutoLockTimeout(Number(e.target.value))}
+              >
+                <option value={0}>{t("autoLockNever")}</option>
+                <option value={60}>{t("autoLock1m")}</option>
+                <option value={300}>{t("autoLock5m")}</option>
+                <option value={900}>{t("autoLock15m")}</option>
+                <option value={1800}>{t("autoLock30m")}</option>
+                <option value={3600}>{t("autoLock1h")}</option>
+              </select>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSettingsOpen(false)}>
@@ -883,47 +923,33 @@ function FieldCard({
             <div className="flex gap-0.5">
               {onToggleReveal && (
                 <Tooltip content={revealed ? t("hide") : t("show")} side="top">
-                  <motion.div whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={onToggleReveal}
-                    >
-                      {revealed ? (
-                        <EyeOff className="w-3.5 h-3.5" />
-                      ) : (
-                        <Eye className="w-3.5 h-3.5" />
-                      )}
-                    </Button>
-                  </motion.div>
+                  <IconButton className="h-7 w-7" onClick={onToggleReveal}>
+                    {revealed ? (
+                      <EyeOff className="w-3.5 h-3.5" />
+                    ) : (
+                      <Eye className="w-3.5 h-3.5" />
+                    )}
+                  </IconButton>
                 </Tooltip>
               )}
               <Tooltip content={copied ? t("copied") : t("copy")} side="top">
-                <motion.div whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.85 }}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={onCopy}
-                  >
-                    <AnimatePresence mode="wait">
-                      {copied ? (
-                        <motion.span
-                          key="check"
-                          initial={{ scale: 0, rotate: -30 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          exit={{ scale: 0, rotate: 30 }}
-                          transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                        >
-                          <Check className="w-3.5 h-3.5 text-green-400" />
-                        </motion.span>
-                      ) : (
-                        <Copy className="w-3.5 h-3.5" />
-                      )}
-                    </AnimatePresence>
-                  </Button>
-                </motion.div>
+                <IconButton className="h-7 w-7" onClick={onCopy}>
+                  <AnimatePresence mode="wait">
+                    {copied ? (
+                      <motion.span
+                        key="check"
+                        initial={{ scale: 0, rotate: -30 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        exit={{ scale: 0, rotate: 30 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                      >
+                        <Check className="w-3.5 h-3.5 text-green-400" />
+                      </motion.span>
+                    ) : (
+                      <Copy className="w-3.5 h-3.5" />
+                    )}
+                  </AnimatePresence>
+                </IconButton>
               </Tooltip>
             </div>
           </div>
