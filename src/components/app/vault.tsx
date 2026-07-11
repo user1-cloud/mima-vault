@@ -36,6 +36,7 @@ import {
   useSensors,
   type DragEndEvent,
   type DragOverEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -120,7 +121,7 @@ function SortableEntryItem({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: isDragging ? undefined : transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
@@ -245,6 +246,7 @@ export function Vault() {
   const [showPassword, setShowPassword] = useState<Record<number, boolean>>({});
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [dragActive, setDragActive] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [vaultNameInput, setVaultNameInput] = useState("");
   const [bioAvailable, setBioAvailable] = useState(false);
@@ -360,6 +362,10 @@ export function Vault() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  const handleDragStart = useCallback(() => {
+    setDragActive(true);
+  }, []);
+
   const handleDragOver = useCallback((event: DragOverEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -373,6 +379,7 @@ export function Vault() {
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
+      setDragActive(false);
       const { active, over } = event;
       if (!over || active.id === over.id) return;
       const orders: [number, number][] = items.map((e, i) => [e.id, i * 1000]);
@@ -512,6 +519,7 @@ export function Vault() {
             <DndContext
               sensors={sensors}
               collisionDetection={rectIntersection}
+              onDragStart={handleDragStart}
               onDragOver={handleDragOver}
               onDragEnd={handleDragEnd}
             >
@@ -523,7 +531,7 @@ export function Vault() {
                   {filtered.map((entry) => (
                     <motion.div
                       key={entry.id}
-                      layout
+                      layout={!dragActive}
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}

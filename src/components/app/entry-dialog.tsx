@@ -236,13 +236,15 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
                   className="pr-10 font-mono transition-shadow duration-300 focus:shadow-[0_0_15px_-3px_oklch(0.65_0.2_250/0.3)]"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <IconButton
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-muted-foreground"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </IconButton>
+                  <Tooltip content={showPassword ? t("hide") : t("show")} side="top">
+                    <IconButton
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="h-7 w-7"
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </IconButton>
+                  </Tooltip>
                 </div>
               </div>
               <Tooltip content={t("generatePassword")} side="bottom">

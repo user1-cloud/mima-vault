@@ -8,6 +8,7 @@ import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { IconButton } from "@/components/ui/icon-button";
 import { StatefulButton } from "@/components/ui/stateful-button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { CardSpotlight } from "@/components/ui/card-spotlight";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -152,13 +153,15 @@ export function Unlock() {
                   autoFocus
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <IconButton
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-muted-foreground"
-                  >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </IconButton>
+                  <Tooltip content={showPassword ? t("hide") : t("show")} side="top">
+                    <IconButton
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="h-7 w-7"
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    </IconButton>
+                  </Tooltip>
                 </div>
               </div>
             </div>

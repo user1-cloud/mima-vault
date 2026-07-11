@@ -288,7 +288,7 @@ export function VaultList() {
                         setDeleteId(vault.id);
                       }}
                     >
-                      <Trash2 className="w-4 h-4 text-muted-foreground hover:text-danger" />
+                      <Trash2 className="w-4 h-4" />
                     </IconButton>
                   </Tooltip>
                 </motion.div>
