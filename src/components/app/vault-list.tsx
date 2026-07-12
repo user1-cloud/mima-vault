@@ -41,16 +41,9 @@ import {
   arrayMove,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { Modal, ModalBody, ModalContent } from "@/components/ui/animated-modal";
 import { CardSpotlight } from "@/components/ui/card-spotlight";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { LangSwitcher } from "./lang-switcher";
 import { WaveBackground } from "./wave-background";
 import { VaultCard } from "./vault-card";
@@ -710,39 +703,37 @@ export function VaultList() {
         </div>
       </div>
 
-      <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <div className="mx-auto w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center mb-3">
+      <Modal open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
+        <ModalBody>
+          <ModalContent className="text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center mb-4">
               <AlertTriangle className="w-6 h-6 text-danger" />
             </div>
-            <DialogTitle className="text-center">
-              {t("confirmDeleteVault")}
-            </DialogTitle>
-            <DialogDescription className="text-center">
+            <h2 className="text-lg font-semibold mb-2">{t("confirmDeleteVault")}</h2>
+            <p className="text-sm text-muted-foreground mb-4">
               {t("confirmDeleteVaultMessage", {
                 name: vaults.find((v) => v.id === deleteId)?.name ?? "",
               })}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="bg-danger/5 border border-danger/20 rounded-lg p-3 text-sm text-danger/90 text-center">
-            {t("deleteVaultWarning")}
-          </div>
-          <DialogFooter className="sm:justify-center gap-3">
-            <SecondaryButton onClick={() => setDeleteId(null)}>
-              {t("cancel")}
-            </SecondaryButton>
-            <DangerButton
-              disabled={countdown > 0}
-              onClick={() => deleteId !== null && handleDelete(deleteId)}
-            >
-              {countdown > 0
-                ? t("deleteVaultCountdown", { n: countdown })
-                : t("deleteVault")}
-            </DangerButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </p>
+            <div className="bg-danger/5 border border-danger/20 rounded-lg p-3 text-sm text-danger/90 text-center mb-4">
+              {t("deleteVaultWarning")}
+            </div>
+            <div className="flex gap-3 justify-center">
+              <SecondaryButton onClick={() => setDeleteId(null)}>
+                {t("cancel")}
+              </SecondaryButton>
+              <DangerButton
+                disabled={countdown > 0}
+                onClick={() => deleteId !== null && handleDelete(deleteId)}
+              >
+                {countdown > 0
+                  ? t("deleteVaultCountdown", { n: countdown })
+                  : t("deleteVault")}
+              </DangerButton>
+            </div>
+          </ModalContent>
+        </ModalBody>
+      </Modal>
     </div>
   );
 }

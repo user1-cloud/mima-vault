@@ -9,6 +9,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 
 interface ModalContextType {
   open: boolean;
@@ -35,9 +36,26 @@ export const useModal = () => {
   return context;
 };
 
-export function Modal({ children }: { children: ReactNode }) {
-  return <ModalProvider>{children}</ModalProvider>;
-}
+export function Modal({ children, open, onOpenChange }: { children: ReactNode; open: boolean; onOpenChange: (open: boolean) => void }) {
+  return (
+    <ModalProvider>
+      <ModalChild open={open} onOpenChange={onOpenChange}>
+        {children}
+      </ModalChild>
+    </ModalProvider>
+  );
+};
+
+function ModalChild({ children, open, onOpenChange }: { children: ReactNode; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const context = useModal();
+
+  useEffect(() => { context.setOpen(open); }, [open]);
+  useEffect(() => {
+    if (!context.open && open) onOpenChange(false);
+  }, [context.open]);
+
+  return <>{children}</>;
+};
 
 export const ModalTrigger = ({
   children,
@@ -68,12 +86,15 @@ export const ModalBody = ({
   className?: string;
 }) => {
   const { open } = useModal();
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
     if (open) {
+      setShow(true);
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "auto";
+      setShow(false);
     }
   }, [open]);
 
@@ -81,24 +102,24 @@ export const ModalBody = ({
   const { setOpen } = useModal();
   useOutsideClick(modalRef, () => setOpen(false));
 
-  return (
-    <AnimatePresence>
-      {open && (
+  return createPortal(
+    <AnimatePresence onExitComplete={() => {}}>
+      {show && (
         <motion.div
-          initial={{
-            opacity: 0,
+          variants={{
+            hidden: { opacity: 0 },
+            visible: { opacity: 1, backdropFilter: "blur(10px)" },
+            exit: { opacity: 0, backdropFilter: "blur(0px)", transition: { duration: 0.25, ease: "easeIn" } },
           }}
-          animate={{
-            opacity: 1,
-            backdropFilter: "blur(10px)",
-          }}
-          exit={{
-            opacity: 0,
-            backdropFilter: "blur(0px)",
-          }}
-          className="fixed [perspective:800px] [transform-style:preserve-3d] inset-0 h-full w-full  flex items-center justify-center z-50"
+          initial="hidden"
+          animate="visible"
+          exit="exit"
+          className={cn(
+            "fixed [perspective:800px] [transform-style:preserve-3d] inset-0 h-full w-full flex items-center justify-center z-50",
+            !open && "pointer-events-none"
+          )}
         >
-          <Overlay />
+          <Overlay className={!open ? "pointer-events-none" : ""} />
 
           <motion.div
             ref={modalRef}
@@ -106,35 +127,28 @@ export const ModalBody = ({
               "min-h-[50%] max-h-[90%] md:max-w-[40%] bg-white dark:bg-neutral-950 border border-oklch(0.92 0.004 286.32) border-transparent dark:border-neutral-800 md:rounded-2xl relative z-50 flex flex-col flex-1 overflow-hidden dark:border-oklch(1 0 0 / 10%)",
               className
             )}
-            initial={{
-              opacity: 0,
-              scale: 0.5,
-              rotateX: 40,
-              y: 40,
+            variants={{
+              hidden: { opacity: 0, scale: 0.5, rotateX: 40, y: 40 },
+              visible: {
+                opacity: 1, scale: 1, rotateX: 0, y: 0,
+                transition: { type: "spring", stiffness: 260, damping: 15 },
+              },
+              exit: {
+                opacity: 0, scale: 0.85, rotateX: -15, y: 20,
+                transition: { duration: 0.25, ease: "easeIn" },
+              },
             }}
-            animate={{
-              opacity: 1,
-              scale: 1,
-              rotateX: 0,
-              y: 0,
-            }}
-            exit={{
-              opacity: 0,
-              scale: 0.8,
-              rotateX: 10,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 260,
-              damping: 15,
-            }}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
           >
             <CloseIcon />
             {children}
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

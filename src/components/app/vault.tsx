@@ -64,14 +64,7 @@ import { useAutoLock } from "./use-auto-lock";
 import { Tooltip } from "@/components/ui/tooltip";
 import { CardTitle } from "@/components/ui/card-hover-effect";
 import { CardSpotlight } from "@/components/ui/card-spotlight";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { Modal, ModalBody, ModalContent } from "@/components/ui/animated-modal";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { EncryptedText } from "@/components/ui/encrypted-text";
 import { ListCardIcon, ListCardContent } from "./list-card";
@@ -742,122 +735,124 @@ export function Vault() {
         entry={editingEntry}
       />
 
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{t("vaultSettings")}</DialogTitle>
-            <DialogDescription>{t("vaultSettingsDesc")}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">{t("vaultName")}</label>
-              <Input
-                value={vaultNameInput}
-                onChange={(e) => setVaultNameInput(e.target.value)}
-                placeholder={t("enterVaultName")}
-              />
-            </div>
+      <Modal open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <ModalBody>
+          <ModalContent>
+            <h2 className="text-lg font-semibold mb-2">{t("vaultSettings")}</h2>
+            <p className="text-sm text-muted-foreground mb-4">{t("vaultSettingsDesc")}</p>
 
-            {bioAvailable && (
-              <>
-                <div className="border-t border-border" />
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Fingerprint className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">{t("biometricUnlock")}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">{t("biometricDesc")}</p>
-
-                  {bioEnabled ? (
-                    <PrimaryButton
-                      size="sm"
-                      className="w-full"
-                      onClick={handleDisableBiometric}
-                    >
-                      <ShieldOff className="w-4 h-4 mr-2" />
-                      {t("disableBiometric")}
-                    </PrimaryButton>
-                  ) : (
-                    <div className="space-y-2">
-                      <Input
-                        type="password"
-                        value={bioPassword}
-                        onChange={(e) => setBioPassword(e.target.value)}
-                        placeholder={t("enterPasswordToEnable")}
-                        autoComplete="off"
-                        className="font-mono"
-                      />
-                      {bioError && (
-                        <p className="text-xs text-danger">{bioError}</p>
-                      )}
-                      <PrimaryButton
-                        className="w-full"
-                        disabled={!bioPassword}
-                        onClick={handleEnableBiometric}
-                      >
-                        <Fingerprint className="w-4 h-4" />
-                        {t("enableBiometric")}
-                      </PrimaryButton>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-            <div className="border-t border-border" />
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-primary" />
-                <span className="text-sm font-medium">{t("autoLock")}</span>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{t("vaultName")}</label>
+                <Input
+                  value={vaultNameInput}
+                  onChange={(e) => setVaultNameInput(e.target.value)}
+                  placeholder={t("enterVaultName")}
+                />
               </div>
-              <p className="text-xs text-muted-foreground">{t("autoLockDesc")}</p>
-              <select
-                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                value={autoLockTimeout}
-                onChange={(e) => setAutoLockTimeout(Number(e.target.value))}
-              >
-                <option value={0}>{t("autoLockNever")}</option>
-                <option value={60}>{t("autoLock1m")}</option>
-                <option value={300}>{t("autoLock5m")}</option>
-                <option value={900}>{t("autoLock15m")}</option>
-                <option value={1800}>{t("autoLock30m")}</option>
-                <option value={3600}>{t("autoLock1h")}</option>
-              </select>
-            </div>
-          </div>
-          <DialogFooter>
-            <SecondaryButton onClick={() => setSettingsOpen(false)}>
-              {t("cancel")}
-            </SecondaryButton>
-            <PrimaryButton onClick={handleSaveSettings} disabled={!vaultNameInput.trim()}>
-              {t("saveVaultSettings")}
-            </PrimaryButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
-      <Dialog open={deleteConfirmId !== null} onOpenChange={() => setDeleteConfirmId(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <div className="mx-auto w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center mb-3">
+              {bioAvailable && (
+                <>
+                  <div className="border-t border-border" />
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Fingerprint className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-medium">{t("biometricUnlock")}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t("biometricDesc")}</p>
+
+                    {bioEnabled ? (
+                      <PrimaryButton
+                        size="sm"
+                        className="w-full"
+                        onClick={handleDisableBiometric}
+                      >
+                        <ShieldOff className="w-4 h-4 mr-2" />
+                        {t("disableBiometric")}
+                      </PrimaryButton>
+                    ) : (
+                      <div className="space-y-2">
+                        <Input
+                          type="password"
+                          value={bioPassword}
+                          onChange={(e) => setBioPassword(e.target.value)}
+                          placeholder={t("enterPasswordToEnable")}
+                          autoComplete="off"
+                          className="font-mono"
+                        />
+                        {bioError && (
+                          <p className="text-xs text-danger">{bioError}</p>
+                        )}
+                        <PrimaryButton
+                          className="w-full"
+                          disabled={!bioPassword}
+                          onClick={handleEnableBiometric}
+                        >
+                          <Fingerprint className="w-4 h-4" />
+                          {t("enableBiometric")}
+                        </PrimaryButton>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+              <div className="border-t border-border" />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">{t("autoLock")}</span>
+                </div>
+                <p className="text-xs text-muted-foreground">{t("autoLockDesc")}</p>
+                <select
+                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                  value={autoLockTimeout}
+                  onChange={(e) => setAutoLockTimeout(Number(e.target.value))}
+                >
+                  <option value={0}>{t("autoLockNever")}</option>
+                  <option value={60}>{t("autoLock1m")}</option>
+                  <option value={300}>{t("autoLock5m")}</option>
+                  <option value={900}>{t("autoLock15m")}</option>
+                  <option value={1800}>{t("autoLock30m")}</option>
+                  <option value={3600}>{t("autoLock1h")}</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end pt-2">
+              <SecondaryButton onClick={() => setSettingsOpen(false)}>
+                {t("cancel")}
+              </SecondaryButton>
+              <PrimaryButton onClick={handleSaveSettings} disabled={!vaultNameInput.trim()}>
+                {t("saveVaultSettings")}
+              </PrimaryButton>
+            </div>
+          </ModalContent>
+        </ModalBody>
+      </Modal>
+
+      <Modal open={deleteConfirmId !== null} onOpenChange={() => setDeleteConfirmId(null)}>
+        <ModalBody>
+          <ModalContent className="text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center mb-4">
               <AlertTriangle className="w-6 h-6 text-danger" />
             </div>
-            <DialogTitle className="text-center">{t("confirmDelete")}</DialogTitle>
-            <DialogDescription className="text-center">
+            <h2 className="text-lg font-semibold mb-2">{t("confirmDelete")}</h2>
+            <p className="text-sm text-muted-foreground mb-4">
               {t("confirmDeleteMessage")}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="sm:justify-center gap-3">
-            <SecondaryButton onClick={() => setDeleteConfirmId(null)}>
-              {t("cancel")}
-            </SecondaryButton>
-            <DangerButton
-              onClick={() => deleteConfirmId !== null && handleDelete(deleteConfirmId)}
-            >
-              {t("deleteEntry")}
-            </DangerButton>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </p>
+            <div className="flex gap-3 justify-center">
+              <SecondaryButton onClick={() => setDeleteConfirmId(null)}>
+                {t("cancel")}
+              </SecondaryButton>
+              <DangerButton
+                onClick={() => deleteConfirmId !== null && handleDelete(deleteConfirmId)}
+              >
+                {t("deleteEntry")}
+              </DangerButton>
+            </div>
+          </ModalContent>
+        </ModalBody>
+      </Modal>
     </div>
   );
 }

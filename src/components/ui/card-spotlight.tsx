@@ -49,10 +49,23 @@ export const CardSpotlight = ({
     const el = containerRef.current;
     if (!el) return;
 
+    const handleDocMouseOver = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (el.contains(target)) {
+        updateMousePosition(el, e.clientX, e.clientY);
+        setIsHovering(true);
+      }
+    };
+    document.addEventListener("mouseover", handleDocMouseOver);
+
     if (el.matches(":hover")) {
       updateMousePosition(el, globalMouseX, globalMouseY);
       setIsHovering(true);
     }
+
+    return () => {
+      document.removeEventListener("mouseover", handleDocMouseOver);
+    };
   }, [updateMousePosition]);
 
   function handleMouseMove({

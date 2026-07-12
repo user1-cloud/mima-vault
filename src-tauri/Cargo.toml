@@ -35,6 +35,7 @@ totp-rs = { version = "5", features = ["gen_secret", "otpauth"] }
 # System keychain
 keyring = "3"
 
-# Biometric authentication
+# Biometric & idle (desktop only)
+[target.'cfg(not(target_os = "android"))'.dependencies]
 tauri-plugin-biometry = "0.2"
 tauri-plugin-idlemonitor = "0.2"
