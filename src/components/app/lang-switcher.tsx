@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect } from "react";
 import { Globe, Check, Search } from "lucide-react";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
-import { Button } from "@/components/ui/button";
+import { StatefulButton } from "@/components/ui/stateful-button";
+import { PrimaryButton } from "@/components/ui/primary-button";
+import { SecondaryButton } from "@/components/ui/secondary-button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Input } from "@/components/ui/input";
 import {
@@ -118,12 +120,12 @@ export function LangSwitcher() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={handleCancel}>
+            <SecondaryButton onClick={handleCancel}>
               {t("cancel")}
-            </Button>
-            <Button onClick={() => setOpen(false)}>
+            </SecondaryButton>
+            <PrimaryButton onClick={() => setOpen(false)}>
               {t("save")}
-            </Button>
+            </PrimaryButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

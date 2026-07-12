@@ -43,19 +43,22 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   arrayMove,
-  useSortable,
+
+
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+
 import { useApp, type Entry } from "@/stores/app";
 import type { TotpCode } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { open } from "@tauri-apps/plugin-shell";
 import { save, open as openFile } from "@tauri-apps/plugin-dialog";
-import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { StatefulButton } from "@/components/ui/stateful-button";
+import { PrimaryButton } from "@/components/ui/primary-button";
+import { SecondaryButton } from "@/components/ui/secondary-button";
+import { DangerButton } from "@/components/ui/danger-button";
 import { useAutoLock } from "./use-auto-lock";
 
 import { Tooltip } from "@/components/ui/tooltip";
@@ -71,6 +74,8 @@ import {
 } from "@/components/ui/dialog";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { EncryptedText } from "@/components/ui/encrypted-text";
+import { ListCardIcon, ListCardContent } from "./list-card";
+import { SortableCardItem } from "./sortable-card-item";
 
 import { Input } from "@/components/ui/input";
 import { EntryDialog } from "./entry-dialog";
@@ -110,76 +115,29 @@ function SortableEntryItem({
   isSelected: boolean;
   onSelect: () => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: entry.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: isDragging ? undefined : transition,
-    opacity: isDragging ? 0 : 1,
-    zIndex: isDragging ? 50 : undefined,
-  };
-
   return (
-    <div ref={setNodeRef} style={style} className="px-2 py-0.5">
-      <motion.div
-        whileHover={{ scale: 1.015 }}
-        whileTap={{ scale: 0.985 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className={`rounded-xl flex items-stretch overflow-hidden ${
-          isSelected
-            ? "bg-surface-overlay ring-1 ring-primary/30"
-            : "bg-surface-elevated hover:bg-surface-overlay"
-        }`}
+    <SortableCardItem id={entry.id} className={isSelected ? "bg-surface-overlay ring-1 ring-primary/30" : ""}>
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex-1 flex items-center gap-3 p-3 pl-1 text-left min-w-0"
       >
-        <div
-          {...attributes}
-          {...listeners}
-          className="flex items-center justify-center w-9 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-muted-foreground transition-colors touch-none bg-white/[0.06]"
-        >
-          <GripVertical className="w-5 h-5" />
-        </div>
-        <button
-          type="button"
-          onClick={onSelect}
-          className="flex-1 flex items-center gap-3 p-3 pl-1 text-left min-w-0"
-        >
+        <ListCardIcon className={isSelected ? "rounded-full bg-primary/20 text-primary ring-2 ring-primary/20" : `rounded-full ${avatarColor(entry.name)}`}>
+          <span className="text-sm font-semibold">
+            {entry.name.charAt(0).toUpperCase()}
+          </span>
+        </ListCardIcon>
+        <ListCardContent name={entry.name} subtitle={entry.username} />
+        {isSelected && (
           <motion.div
-            whileHover={{ scale: 1.1 }}
-            transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-              isSelected
-                ? "bg-primary/20 text-primary ring-2 ring-primary/20"
-                : avatarColor(entry.name)
-            }`}
-          >
-            <span className="text-sm font-semibold">
-              {entry.name.charAt(0).toUpperCase()}
-            </span>
-          </motion.div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium truncate">{entry.name}</p>
-            <p className="text-xs text-muted-foreground truncate mt-0.5">
-              {entry.username}
-            </p>
-          </div>
-          {isSelected && (
-            <motion.div
-              initial={{ scale: 0, height: 0 }}
-              animate={{ scale: 1, height: 32 }}
-              transition={{ type: "spring", stiffness: 400, damping: 20 }}
-              className="w-1.5 rounded-full bg-primary shrink-0"
-            />
-          )}
-        </button>
-      </motion.div>
-    </div>
+            initial={{ scale: 0, height: 0 }}
+            animate={{ scale: 1, height: 32 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            className="w-1.5 rounded-full bg-primary shrink-0"
+          />
+        )}
+      </button>
+    </SortableCardItem>
   );
 }
 
@@ -450,9 +408,9 @@ export function Vault() {
   return (
     <div className="h-full flex bg-surface relative overflow-hidden">
       {/* Sidebar */}
-      <div className={`w-full md:w-72 lg:w-80 border-r border-border flex flex-col relative z-10 ${selected ? 'hidden md:flex' : ''}`}>
+      <div className={`w-full md:w-72 lg:w-80 flex flex-col relative z-10 bg-surface-elevated ${selected ? 'hidden md:flex' : ''}`}>
         {/* Header */}
-        <div className="p-4 border-b border-border space-y-3">
+        <div className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 min-w-0">
               <TextGenerateEffect
@@ -502,13 +460,13 @@ export function Vault() {
                 {debouncedSearch ? t("noMatches") : t("noEntries")}
               </p>
               {!debouncedSearch && (
-                <Button
+                <StatefulButton
                   variant="link"
                   onClick={handleCreate}
                   className="mt-1 text-primary"
                 >
                   {t("addFirst")}
-                </Button>
+                </StatefulButton>
               )}
             </div>
           ) : (
@@ -579,15 +537,15 @@ export function Vault() {
         </div>
 
         {/* Action buttons */}
-        <div className="p-3 border-t border-border">
+        <div className="p-3 bg-surface">
           <div className="flex items-center gap-2">
-            <StatefulButton
+            <PrimaryButton
               onClick={handleCreate}
               className="flex-1"
             >
               <Plus className="w-4 h-4 shrink-0" />
               {t("newEntry")}
-            </StatefulButton>
+            </PrimaryButton>
             <Tooltip content={t("export")} side="bottom">
               <IconButton
                 onClick={async () => {
@@ -745,17 +703,15 @@ export function Vault() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.4 }}
-                  className="pt-4 border-t border-border"
+                  className="pt-4"
                 >
-                  <Button
-                    variant="ghost"
+                  <DangerButton
                     size="sm"
-                    className="text-muted-foreground hover:text-danger transition-colors"
                     onClick={() => setDeleteConfirmId(selected.id)}
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     {t("deleteEntry")}
-                  </Button>
+                  </DangerButton>
                 </motion.div>
               </div>
             </motion.div>
@@ -813,15 +769,14 @@ export function Vault() {
                   <p className="text-xs text-muted-foreground">{t("biometricDesc")}</p>
 
                   {bioEnabled ? (
-                    <Button
-                      variant="outline"
+                    <PrimaryButton
                       size="sm"
                       className="w-full"
                       onClick={handleDisableBiometric}
                     >
                       <ShieldOff className="w-4 h-4 mr-2" />
                       {t("disableBiometric")}
-                    </Button>
+                    </PrimaryButton>
                   ) : (
                     <div className="space-y-2">
                       <Input
@@ -835,14 +790,14 @@ export function Vault() {
                       {bioError && (
                         <p className="text-xs text-danger">{bioError}</p>
                       )}
-                      <StatefulButton
+                      <PrimaryButton
                         className="w-full"
                         disabled={!bioPassword}
                         onClick={handleEnableBiometric}
                       >
                         <Fingerprint className="w-4 h-4" />
                         {t("enableBiometric")}
-                      </StatefulButton>
+                      </PrimaryButton>
                     </div>
                   )}
                 </div>
@@ -870,12 +825,12 @@ export function Vault() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSettingsOpen(false)}>
+            <SecondaryButton onClick={() => setSettingsOpen(false)}>
               {t("cancel")}
-            </Button>
-            <Button onClick={handleSaveSettings} disabled={!vaultNameInput.trim()}>
+            </SecondaryButton>
+            <PrimaryButton onClick={handleSaveSettings} disabled={!vaultNameInput.trim()}>
               {t("saveVaultSettings")}
-            </Button>
+            </PrimaryButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -892,15 +847,14 @@ export function Vault() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="sm:justify-center gap-3">
-            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>
+            <SecondaryButton onClick={() => setDeleteConfirmId(null)}>
               {t("cancel")}
-            </Button>
-            <Button
-              variant="destructive"
+            </SecondaryButton>
+            <DangerButton
               onClick={() => deleteConfirmId !== null && handleDelete(deleteConfirmId)}
             >
               {t("deleteEntry")}
-            </Button>
+            </DangerButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, type Variants } from "motion/react";
+import { motion, AnimatePresence, type Variants } from "motion/react";
 import {
   Lock,
   Plus,
   Loader2,
-  Trash2,
   AlertTriangle,
   Eye,
   EyeOff,
@@ -16,12 +15,32 @@ import mimaIcon from "@/assets/mima.svg";
 import { useApp } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
-import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
-import { StatefulButton } from "@/components/ui/stateful-button";
+
+import { PrimaryButton } from "@/components/ui/primary-button";
+import { SecondaryButton } from "@/components/ui/secondary-button";
+import { DangerButton } from "@/components/ui/danger-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  DndContext,
+  DragOverlay,
+  rectIntersection,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CardSpotlight } from "@/components/ui/card-spotlight";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import {
@@ -34,6 +53,7 @@ import {
 } from "@/components/ui/dialog";
 import { LangSwitcher } from "./lang-switcher";
 import { WaveBackground } from "./wave-background";
+import { VaultCard } from "./vault-card";
 
 const cardVariants: Variants = {
   hidden: { opacity: 0, y: 30, scale: 0.96 },
@@ -44,6 +64,36 @@ const cardVariants: Variants = {
     transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] },
   },
 };
+
+function ViewWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="space-y-4">
+      <div className="text-center space-y-2 mb-6">
+        <motion.div
+          initial={{ scale: 0, rotate: -20 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: "spring", stiffness: 200, damping: 15 }}
+          className="mx-auto w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-3"
+        >
+          <img src={mimaIcon} alt="Mima" className="w-10 h-10" />
+        </motion.div>
+        <TextGenerateEffect
+          words="Mima"
+          className="text-xl font-semibold tracking-tight [&_div]:text-xl"
+        />
+      </div>
+      {children}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="flex justify-center"
+      >
+        <LangSwitcher />
+      </motion.div>
+    </div>
+  );
+}
 
 export function VaultList() {
   const navigate = useNavigate();
@@ -65,8 +115,44 @@ export function VaultList() {
   const [unlockLoading, setUnlockLoading] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricLoading, setBiometricLoading] = useState(false);
+  const [showAllVaults, setShowAllVaults] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(5);
+
+  const [items, setItems] = useState(vaults);
+  const [dragActive, setDragActive] = useState(false);
+  const [activeDragVault, setActiveDragVault] = useState<typeof vaults[0] | null>(null);
+
+  useEffect(() => {
+    setItems(vaults);
+  }, [vaults]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setDragActive(true);
+    const vault = vaults.find((v) => v.id === event.active.id);
+    if (vault) setActiveDragVault(vault);
+  }, [vaults]);
+
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    setItems((prev) => {
+      const oldIdx = prev.findIndex((v) => v.id === active.id);
+      const newIdx = prev.findIndex((v) => v.id === over.id);
+      if (oldIdx === -1 || newIdx === -1) return prev;
+      return arrayMove(prev, oldIdx, newIdx);
+    });
+  }, []);
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    setDragActive(false);
+    setActiveDragVault(null);
+  }, []);
 
   useEffect(() => {
     loadVaults().finally(() => setLoading(false));
@@ -93,6 +179,59 @@ export function VaultList() {
       checkBiometricEnabled(unlockingVaultId).then(setBiometricAvailable);
     }
   }, [unlockingVaultId, checkBiometricEnabled]);
+
+  const showAllVaultsRef = useRef(showAllVaults);
+  showAllVaultsRef.current = showAllVaults;
+  const unlockingRef = useRef<number | null>(unlockingVaultId);
+  unlockingRef.current = unlockingVaultId;
+  const showCreateRef = useRef(showCreate);
+  showCreateRef.current = showCreate;
+  const deleteIdRef = useRef<number | null>(deleteId);
+  deleteIdRef.current = deleteId;
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (deleteIdRef.current !== null) {
+        setDeleteId(null);
+        return;
+      }
+      if (unlockingRef.current !== null) {
+        setUnlockingVaultId(null);
+        setUnlockPassword("");
+        setUnlockError("");
+        return;
+      }
+      if (showCreateRef.current) {
+        setShowCreate(false);
+        setError("");
+        return;
+      }
+      if (showAllVaultsRef.current) {
+        setShowAllVaults(false);
+        return;
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    if (showAllVaults) {
+      window.history.pushState({ __view: "allVaults" }, "", window.location.href);
+    }
+  }, [showAllVaults]);
+
+  useEffect(() => {
+    if (unlockingVaultId !== null) {
+      window.history.pushState({ __view: "unlock" }, "", window.location.href);
+    }
+  }, [unlockingVaultId]);
+
+  useEffect(() => {
+    if (showCreate) {
+      window.history.pushState({ __view: "create" }, "", window.location.href);
+    }
+  }, [showCreate]);
 
   const handleCreate = useCallback(async () => {
     if (!vaultName.trim()) {
@@ -183,52 +322,26 @@ export function VaultList() {
       </div>
 
       <div className="min-h-full flex items-center justify-center relative z-10">
-        <motion.div
-          variants={cardVariants}
-          initial="hidden"
-          animate="visible"
-          className="relative w-full max-w-md space-y-4"
-        >
-        {/* Header */}
-        {!unlockingVaultId && (
-          <div className="text-center space-y-2 mb-6">
-            <motion.div
-              initial={{ scale: 0, rotate: -20 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="mx-auto w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-3"
-            >
-              <img src={mimaIcon} alt="Mima" className="w-10 h-10" />
-            </motion.div>
-            <TextGenerateEffect
-              words="Mima"
-              className="text-xl font-semibold tracking-tight [&_div]:text-xl"
-            />
-          </div>
-        )}
+        <div className="relative w-full max-w-md">
+        <AnimatePresence mode="wait">
 
         {/* Vault list */}
         {unlockingVaultId ? (
+          <motion.div
+            key="unlock"
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+          >
+          <ViewWrapper>
           <CardSpotlight
-            className="bg-surface border-border/50 rounded-2xl p-8"
+            className="bg-surface border-border/50 rounded-2xl p-6"
             radius={300}
           >
             <div className="space-y-6">
-              <motion.div
-                initial={{ scale: 0, rotate: -20 }}
-                animate={{ scale: 1, rotate: 0 }}
-                transition={{ delay: 0.15, type: "spring", stiffness: 200, damping: 15 }}
-                className="mx-auto w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center"
-              >
-                <img src={mimaIcon} alt="Mima" className="w-10 h-10" />
-              </motion.div>
-
-              <motion.div
-                initial={{ y: 8 }}
-                animate={{ y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="text-center space-y-1.5"
-              >
+              <div className="text-center space-y-1.5">
                 <TextGenerateEffect
                   words={vaults.find((v) => v.id === unlockingVaultId)?.name ?? ""}
                   className="text-xl font-semibold tracking-tight [&_div]:text-xl"
@@ -236,7 +349,7 @@ export function VaultList() {
                 <p className="text-sm text-muted-foreground">
                   {t("unlockDesc")}
                 </p>
-              </motion.div>
+              </div>
 
               {unlockError && (
                 <motion.div
@@ -283,13 +396,13 @@ export function VaultList() {
                 </div>
 
                 <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-                  <StatefulButton
+                  <PrimaryButton
                     className="w-full"
                     disabled={unlockLoading || !unlockPassword}
                     onClick={handleUnlock}
                   >
                     {t("unlockBtn")}
-                  </StatefulButton>
+                  </PrimaryButton>
                 </motion.div>
               </motion.form>
 
@@ -335,33 +448,48 @@ export function VaultList() {
                 </motion.div>
               )}
 
-              <motion.button
+              <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.35 }}
-                onClick={() => {
-                  setUnlockingVaultId(null);
-                  setUnlockPassword("");
-                  setUnlockError("");
-                }}
-                className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-white transition-colors mx-auto"
               >
-                <ArrowLeft className="w-4 h-4" />
-                {t("backToVaults")}
-              </motion.button>
+                <SecondaryButton
+                  className="mx-auto"
+                  onClick={() => {
+                    setUnlockingVaultId(null);
+                    setUnlockPassword("");
+                    setUnlockError("");
+                  }}
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  {t("backToVaults")}
+                </SecondaryButton>
+              </motion.div>
             </div>
           </CardSpotlight>
+          </ViewWrapper>
+          </motion.div>
         ) : vaults.length === 0 && !showCreate ? (
+          <motion.div
+            key="empty"
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+          >
+          <ViewWrapper>
           <CardSpotlight
-            className="bg-surface border-border/50 rounded-2xl p-8"
+            className="bg-surface border-border/50 rounded-2xl p-6"
             radius={300}
           >
             <div className="text-center space-y-4">
-              <p className="text-muted-foreground text-sm">
-                {t("noVaults")}
-              </p>
+              <TextGenerateEffect
+                words={t("noVaults")}
+                className="text-lg font-semibold tracking-tight [&_div]:text-lg"
+              />
               <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-                <StatefulButton
+                <PrimaryButton
                   className="w-full"
                   onClick={() => setShowCreate(true)}
                 >
@@ -369,13 +497,24 @@ export function VaultList() {
                     <Plus className="w-4 h-4 mr-2 shrink-0" />
                     {t("createFirstVault")}
                   </span>
-                </StatefulButton>
+                </PrimaryButton>
               </motion.div>
             </div>
           </CardSpotlight>
+          </ViewWrapper>
+          </motion.div>
         ) : showCreate ? (
+          <motion.div
+            key="create"
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+          >
+          <ViewWrapper>
           <CardSpotlight
-            className="bg-surface border-border/50 rounded-2xl p-8"
+            className="bg-surface border-border/50 rounded-2xl p-6"
             radius={300}
           >
             <div className="space-y-4">
@@ -428,8 +567,7 @@ export function VaultList() {
                 />
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
+                <SecondaryButton
                   className="flex-1"
                   onClick={() => {
                     setShowCreate(false);
@@ -437,87 +575,139 @@ export function VaultList() {
                   }}
                 >
                   {t("cancel")}
-                </Button>
-                <StatefulButton
+                </SecondaryButton>
+                <PrimaryButton
                   className="flex-1"
                   disabled={creating || !vaultName || !password}
                   onClick={handleCreate}
                 >
                   {t("createVaultBtn")}
-                </StatefulButton>
+                </PrimaryButton>
               </div>
             </div>
           </CardSpotlight>
-        ) : (
+          </ViewWrapper>
+          </motion.div>
+        ) : showAllVaults ? (
+          <motion.div
+            key="allVaults"
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+          >
+          <ViewWrapper>
           <CardSpotlight
             className="bg-surface border-border/50 rounded-2xl p-6"
             radius={300}
           >
             <div className="space-y-4">
-              <div className="space-y-2">
-              {vaults.map((vault) => (
-                <motion.div
-                  key={vault.id}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-surface-elevated border border-border/50 hover:border-primary/30 transition-colors cursor-pointer group"
-                  onClick={() => {
-                    setUnlockingVaultId(vault.id);
-                    setUnlockPassword("");
-                    setUnlockError("");
-                  }}
-                >
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <Lock className="w-4 h-4 text-primary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{vault.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {vault.created_at}
-                    </p>
-                  </div>
-                  <Tooltip content={t("deleteVault")} side="bottom">
-                    <IconButton
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteId(vault.id);
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </IconButton>
-                  </Tooltip>
-                </motion.div>
-              ))}
-            </div>
-            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setShowCreate(true);
-                  setVaultName("");
-                  setPassword("");
-                  setConfirm("");
-                  setError("");
-                }}
+              <TextGenerateEffect
+                words={t("allVaults")}
+                className="text-lg font-semibold tracking-tight text-center [&_div]:text-lg"
+              />
+              <DndContext
+                sensors={sensors}
+                collisionDetection={rectIntersection}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
               >
-                <Plus className="w-4 h-4 mr-2" />
-                {t("createVaultBtn")}
-              </Button>
-            </motion.div>
+                <SortableContext items={items.map((v) => v.id)} strategy={verticalListSortingStrategy}>
+                  {items.map((vault) => (
+                    <VaultCard
+                      key={vault.id}
+                      id={vault.id}
+                      sortable
+                      name={vault.name}
+                      createdAt={vault.created_at}
+                      onClick={() => {
+                        setUnlockingVaultId(vault.id);
+                        setUnlockPassword("");
+                        setUnlockError("");
+                      }}
+                      onDelete={() => setDeleteId(vault.id)}
+                    />
+                  ))}
+                </SortableContext>
+                <DragOverlay style={{ pointerEvents: "none" }}>
+                  {activeDragVault ? (
+                    <VaultCard
+                      id={activeDragVault.id}
+                      sortable
+                      name={activeDragVault.name}
+                      createdAt={activeDragVault.created_at}
+                      onClick={() => {}}
+                    />
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            <PrimaryButton
+              className="w-full"
+              onClick={() => {
+                setShowCreate(true);
+                setVaultName("");
+                setPassword("");
+                setConfirm("");
+                setError("");
+              }}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              {t("createVaultBtn")}
+            </PrimaryButton>
+            <SecondaryButton
+              className="mx-auto"
+              onClick={() => setShowAllVaults(false)}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              {t("back")}
+            </SecondaryButton>
             </div>
           </CardSpotlight>
+          </ViewWrapper>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="landing"
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.2 }}
+          >
+          <ViewWrapper>
+          <CardSpotlight
+            className="bg-surface border-border/50 rounded-2xl p-6"
+            radius={300}
+          >
+            <div className="space-y-4">
+              <TextGenerateEffect
+                words={t("recentVault")}
+                className="text-lg font-semibold tracking-tight text-center [&_div]:text-lg"
+              />
+              <VaultCard
+                name={vaults[0].name}
+                createdAt={vaults[0].created_at}
+                onClick={() => {
+                  setUnlockingVaultId(vaults[0].id);
+                  setUnlockPassword("");
+                  setUnlockError("");
+                }}
+              />
+              <PrimaryButton
+                className="mx-auto"
+                onClick={() => setShowAllVaults(true)}
+              >
+                {t("viewAllVaults", { n: vaults.length })}
+              </PrimaryButton>
+            </div>
+          </CardSpotlight>
+          </ViewWrapper>
+          </motion.div>
         )}
-
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="flex justify-center"
-        >
-          <LangSwitcher />
-        </motion.div>
-      </motion.div>
+        </AnimatePresence>
+        </div>
       </div>
 
       <Dialog open={deleteId !== null} onOpenChange={() => setDeleteId(null)}>
@@ -539,18 +729,17 @@ export function VaultList() {
             {t("deleteVaultWarning")}
           </div>
           <DialogFooter className="sm:justify-center gap-3">
-            <Button variant="outline" onClick={() => setDeleteId(null)}>
+            <SecondaryButton onClick={() => setDeleteId(null)}>
               {t("cancel")}
-            </Button>
-            <Button
-              variant="destructive"
+            </SecondaryButton>
+            <DangerButton
               disabled={countdown > 0}
               onClick={() => deleteId !== null && handleDelete(deleteId)}
             >
               {countdown > 0
                 ? t("deleteVaultCountdown", { n: countdown })
                 : t("deleteVault")}
-            </Button>
+            </DangerButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>

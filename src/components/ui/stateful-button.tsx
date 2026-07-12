@@ -1,90 +1,63 @@
 "use client";
 import { cn } from "@/lib/utils";
 import React from "react";
-import { motion, useAnimate } from "motion/react";
-import { Loader2, Check } from "lucide-react";
+import { motion } from "motion/react";
+
+const variantStyles = {
+  default:
+    "bg-primary text-primary-foreground hover:ring-primary",
+  secondary:
+    "bg-border border border-muted text-white hover:ring-white/10 hover:bg-muted",
+  destructive:
+    "bg-danger text-danger-foreground hover:ring-danger",
+  ghost:
+    "hover:bg-surface-elevated hover:text-white hover:ring-primary",
+  link: "text-primary underline-offset-4 hover:underline hover:ring-0 hover:ring-offset-0",
+} as const;
+
+const sizeStyles = {
+  default: "h-10 px-4 py-2",
+  sm: "h-9 rounded-md px-3",
+} as const;
 
 interface StatefulButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   className?: string;
   children: React.ReactNode;
+  variant?: keyof typeof variantStyles;
+  size?: keyof typeof sizeStyles;
 }
 
 export const StatefulButton = ({
   className,
   children,
-  ...props
+  variant = "default",
+  size = "default",
+  ...rawProps
 }: StatefulButtonProps) => {
-  const [scope, animate] = useAnimate();
-
-  const animateLoading = async () => {
-    await animate(
-      ".loader",
-      { width: "20px", scale: 1, display: "block" },
-      { duration: 0.2 },
-    );
-  };
-
-  const animateSuccess = async () => {
-    await animate(
-      ".loader",
-      { width: "0px", scale: 0, display: "none" },
-      { duration: 0.2 },
-    );
-    await animate(
-      ".check",
-      { width: "20px", scale: 1, display: "block" },
-      { duration: 0.2 },
-    );
-    await animate(
-      ".check",
-      { width: "0px", scale: 0, display: "none" },
-      { delay: 2, duration: 0.2 },
-    );
-  };
-
-  const handleClick = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    await animateLoading();
-    try {
-      await props.onClick?.(event);
-      await animateSuccess();
-    } catch {
-      await animate(
-        ".loader",
-        { width: "0px", scale: 0, display: "none" },
-        { duration: 0.2 },
-      );
-    }
-  };
-
   const {
-    onClick,
     onDrag,
     onDragStart,
     onDragEnd,
     onAnimationStart,
     onAnimationEnd,
-    ...buttonProps
-  } = props;
+    ...props
+  } = rawProps;
 
   return (
     <motion.button
-      layout
-      ref={scope}
-      whileHover={{ scale: 1.01 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={variant === "link" ? undefined : { scale: 1.01 }}
+      whileTap={variant === "link" ? undefined : { scale: 0.98 }}
       className={cn(
-        "flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 font-medium text-primary-foreground ring-offset-2 transition duration-200 hover:ring-2 hover:ring-primary dark:ring-offset-black",
+        "flex cursor-pointer items-center justify-center gap-2 rounded-md font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+        sizeStyles[size],
+        variantStyles[variant],
+        variant !== "link" && "hover:ring-2 hover:ring-offset-2 hover:ring-offset-surface",
         className,
       )}
-      {...buttonProps}
-      onClick={handleClick}
+      {...props}
     >
-      <motion.div layout className="flex items-center justify-center gap-2">
-        <Loader2 className="loader w-5 h-5 animate-spin text-primary-foreground hidden" />
-        <Check className="check w-5 h-5 text-primary-foreground hidden" />
-        {children}
-      </motion.div>
+      {children}
     </motion.button>
   );
 };

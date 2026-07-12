@@ -9,7 +9,8 @@ import { useApp, type Entry } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { IconButton } from "@/components/ui/icon-button";
-import { Button } from "@/components/ui/button";
+import { PrimaryButton } from "@/components/ui/primary-button";
+import { SecondaryButton } from "@/components/ui/secondary-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -337,17 +338,13 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
           </div>
 
           <div className="flex gap-3 justify-end pt-2">
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Button type="button" variant="ghost" onClick={close}>
-                {t("cancel")}
-              </Button>
-            </motion.div>
-            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Button type="submit" disabled={saving}>
-                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                {entry ? t("save") : t("create")}
-              </Button>
-            </motion.div>
+            <SecondaryButton type="button" onClick={close}>
+              {t("cancel")}
+            </SecondaryButton>
+            <PrimaryButton type="submit" disabled={saving}>
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              {entry ? t("save") : t("create")}
+            </PrimaryButton>
           </div>
         </form>
       </ModalContent>

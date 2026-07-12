@@ -8,7 +8,7 @@ export function WaveBackground() {
       waveX={15}
       waveY={10}
       palette={[[40, 50, 100], [50, 60, 120], [35, 45, 90]]}
-      frameInterval={100}
+      frameInterval={50}
       maskImage="none"
     />
   );
