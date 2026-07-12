@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigateWithTransition } from "@/lib/view-transition";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import {
   Search,
@@ -160,7 +160,7 @@ const fieldCardVariants: Variants = {
 };
 
 export function Vault() {
-  const navigate = useNavigate();
+  const navigate = useNavigateWithTransition();
   const {
     entries,
     searchQuery,

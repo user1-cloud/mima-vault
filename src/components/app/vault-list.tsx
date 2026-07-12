@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigateWithTransition } from "@/lib/view-transition";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import {
   Lock,
@@ -89,7 +89,7 @@ function ViewWrapper({ children }: { children: React.ReactNode }) {
 }
 
 export function VaultList() {
-  const navigate = useNavigate();
+  const navigate = useNavigateWithTransition();
   const { vaults, loadVaults, createVault, deleteVault, openVault, checkBiometricEnabled, biometricUnlock } = useApp();
 
   useLocale();
@@ -245,7 +245,8 @@ export function VaultList() {
       await createVault(vaultName, password);
       navigate("/vault");
     } catch (e) {
-      setError(String(e));
+      const msg = String(e);
+      setError(msg === "A vault with this name already exists" ? t("vaultNameDuplicate") : msg);
     } finally {
       setCreating(false);
     }

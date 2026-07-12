@@ -58,6 +58,7 @@ const zh = {
   confirmDeleteMessage: "确定要删除此条目吗？此操作不可撤销。",
   vaultName: "密码库名称",
   enterVaultName: "输入密码库名称",
+  vaultNameDuplicate: "同名密码库已存在",
   noVaults: "还没有密码库",
   createFirstVault: "创建第一个密码库",
   backToVaults: "返回密码库列表",

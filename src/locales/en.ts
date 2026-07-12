@@ -60,6 +60,7 @@ const en: Translations = {
   confirmDeleteMessage: "Are you sure you want to delete this entry? This action cannot be undone.",
   vaultName: "Vault Name",
   enterVaultName: "Enter vault name",
+  vaultNameDuplicate: "A vault with this name already exists",
   noVaults: "No vaults yet",
   createFirstVault: "Create your first vault",
   backToVaults: "Back to vaults",
