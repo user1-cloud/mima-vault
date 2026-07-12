@@ -75,7 +75,6 @@ import { EncryptedText } from "@/components/ui/encrypted-text";
 import { Input } from "@/components/ui/input";
 import { EntryDialog } from "./entry-dialog";
 import { LangSwitcher } from "./lang-switcher";
-import { DottedGlowBackground } from "@/components/ui/dotted-glow-background";
 
 function useDebounce<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -135,8 +134,8 @@ function SortableEntryItem({
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
         className={`rounded-xl flex items-stretch overflow-hidden ${
           isSelected
-            ? "bg-primary/10 ring-1 ring-primary/20"
-            : "hover:bg-white/[0.04]"
+            ? "bg-surface-overlay ring-1 ring-primary/30"
+            : "bg-surface-elevated hover:bg-surface-overlay"
         }`}
       >
         <div
@@ -450,14 +449,6 @@ export function Vault() {
 
   return (
     <div className="h-full flex bg-surface relative overflow-hidden">
-      <DottedGlowBackground
-        gap={16}
-        radius={1.5}
-        color="rgba(255,255,255,0.4)"
-        glowColor="rgba(50, 117, 248, 0.5)"
-        opacity={0.4}
-        speedScale={0.4}
-      />
       {/* Sidebar */}
       <div className={`w-full md:w-72 lg:w-80 border-r border-border flex flex-col relative z-10 ${selected ? 'hidden md:flex' : ''}`}>
         {/* Header */}
@@ -557,7 +548,7 @@ export function Vault() {
                     const isSelected = activeDragEntry.id === selectedId;
                     return (
                       <div className="px-2 py-0.5">
-                        <div className={`rounded-xl flex items-stretch overflow-hidden shadow-lg ${isSelected ? "bg-primary/10 ring-1 ring-primary/20" : "bg-surface-elevated border border-primary/30"}`}>
+                        <div className={`rounded-xl flex items-stretch overflow-hidden shadow-lg ${isSelected ? "bg-surface-overlay ring-1 ring-primary/30" : "bg-surface-elevated border border-primary/30"}`}>
                           <div className="flex items-center justify-center w-9 shrink-0 cursor-grabbing text-muted-foreground bg-white/[0.06]">
                             <GripVertical className="w-5 h-5" />
                           </div>
@@ -948,7 +939,7 @@ function FieldCard({
       animate="visible"
       className="group"
     >
-      <CardSpotlight className="p-4 rounded-2xl border-white/[0.2]" radius={250}>
+      <CardSpotlight className="p-4 rounded-2xl bg-surface border-white/[0.2]" radius={250}>
         <div className="space-y-2">
           <CardTitle>
             <div className="flex items-center gap-2 -mt-3">
@@ -1078,7 +1069,7 @@ function TotpDisplay({ entryId, index }: { entryId: number; index: number }) {
       animate="visible"
       className="group"
     >
-      <CardSpotlight className="p-4 rounded-2xl border-white/[0.2]" radius={250}>
+      <CardSpotlight className="p-4 rounded-2xl bg-surface border-white/[0.2]" radius={250}>
         <div className="space-y-2">
           <CardTitle>
             <div className="flex items-center gap-2 -mt-3">

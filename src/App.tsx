@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { VaultList } from "@/components/app/vault-list";
-import { Unlock } from "@/components/app/unlock";
 import { Vault } from "@/components/app/vault";
 
 export default function App() {
@@ -16,7 +15,6 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<VaultList />} />
-      <Route path="/unlock/:vaultId" element={<Unlock />} />
       <Route path="/vault" element={<Vault />} />
     </Routes>
   );
