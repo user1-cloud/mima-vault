@@ -27,7 +27,7 @@ export function SortableCardItem({ id, children, className }: SortableCardItemPr
         <div
           {...attributes}
           {...listeners}
-          className="flex items-center justify-center w-9 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-muted-foreground transition-colors touch-none bg-white/[0.06]"
+          className="flex items-center justify-center w-9 shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/60 hover:text-muted-foreground transition-colors touch-none"
         >
           <GripVertical className="w-5 h-5" />
         </div>

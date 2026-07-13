@@ -9,17 +9,19 @@ import {
   useSpring,
   useTransform,
 } from "motion/react";
+import { cn } from "@/lib/utils";
 
 interface TooltipProps {
   content: string;
   side?: "top" | "bottom" | "left" | "right";
+  wrapperClassName?: string;
   children: React.ReactNode;
 }
 
 const GAP = 8;
 const EST_HEIGHT = 20;
 
-export function Tooltip({ content, side = "top", children }: TooltipProps) {
+export function Tooltip({ content, side = "top", wrapperClassName, children }: TooltipProps) {
   const [hovered, setHovered] = useState(false);
   const [pos, setPos] = useState({ top: 0, left: 0 });
   const [adjustedSide, setAdjustedSide] = useState(side);
@@ -28,11 +30,11 @@ export function Tooltip({ content, side = "top", children }: TooltipProps) {
   const springConfig = { stiffness: 100, damping: 15 };
 
   const rotate = useSpring(
-    useTransform(x, [-50, 50], [-10, 10]),
+    useTransform(x, [-40, 40], [-10, 10]),
     springConfig,
   );
   const translateX = useSpring(
-    useTransform(x, [-50, 50], [-20, 20]),
+    useTransform(x, [-40, 40], [-20, 20]),
     springConfig,
   );
 
@@ -49,51 +51,47 @@ export function Tooltip({ content, side = "top", children }: TooltipProps) {
     const estWidth = Math.min(content.length * 10 + 20, 240);
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    let top: number;
-    let left: number;
+    const ecx = rect.left + rect.width / 2;
+    const ecy = rect.top + rect.height / 2;
     let finalSide = side;
+    let cx: number;
+    let cy: number;
 
     if (side === "top") {
-      top = rect.top - EST_HEIGHT - GAP;
-      if (top < GAP) { top = rect.bottom + GAP; finalSide = "bottom"; }
+      cx = ecx;
+      cy = rect.top - GAP - EST_HEIGHT / 2;
+      if (cy - EST_HEIGHT / 2 < GAP) { cy = rect.bottom + GAP + EST_HEIGHT / 2; finalSide = "bottom"; }
     } else if (side === "bottom") {
-      top = rect.bottom + GAP;
-      if (top + EST_HEIGHT > vh - GAP) { top = rect.top - EST_HEIGHT - GAP; finalSide = "top"; }
+      cx = ecx;
+      cy = rect.bottom + GAP + EST_HEIGHT / 2;
+      if (cy + EST_HEIGHT / 2 > vh - GAP) { cy = rect.top - GAP - EST_HEIGHT / 2; finalSide = "top"; }
+    } else if (side === "left") {
+      cx = rect.left - GAP - estWidth / 2;
+      cy = ecy;
+      if (cx - estWidth / 2 < GAP) { cx = rect.right + GAP + estWidth / 2; finalSide = "right"; }
     } else {
-      top = rect.top + rect.height / 2;
+      cx = rect.right + GAP + estWidth / 2;
+      cy = ecy;
+      if (cx + estWidth / 2 > vw - GAP) { cx = rect.left - GAP - estWidth / 2; finalSide = "left"; }
     }
 
-    if (side === "left" || finalSide === "left") {
-      left = rect.left - estWidth - GAP;
-      if (left < GAP) { left = rect.right + GAP; finalSide = "right"; }
-    } else if (side === "right" || finalSide === "right") {
-      left = rect.right + GAP;
-      if (left + estWidth > vw - GAP) { left = rect.left - estWidth - GAP; finalSide = "left"; }
-    } else {
-      left = rect.left + rect.width / 2;
-      const half = estWidth / 2;
-      if (left - half < GAP) {
-        left = GAP + half;
-      } else if (left + half > vw - GAP) {
-        left = vw - GAP - half;
-      }
-      finalSide = side;
-    }
+    const halfW = estWidth / 2;
+    const halfH = EST_HEIGHT / 2;
+    cx = Math.max(GAP + halfW, Math.min(vw - GAP - halfW, cx));
+    cy = Math.max(GAP + halfH, Math.min(vh - GAP - halfH, cy));
 
-    setPos({ top, left });
+    setPos({ top: cy, left: cx });
     setAdjustedSide(finalSide);
     setHovered(true);
   }, [content, side]);
-
-  const isVertical = adjustedSide === "top" || adjustedSide === "bottom";
 
   const tooltipPortal = (
     <AnimatePresence>
       {hovered && (
         <motion.div
-          initial={{ opacity: 0, y: adjustedSide === "bottom" ? -4 : 4, scale: 0.92 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: adjustedSide === "bottom" ? -4 : 4, scale: 0.92 }}
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.92 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
           style={{
             position: "fixed",
@@ -105,9 +103,7 @@ export function Tooltip({ content, side = "top", children }: TooltipProps) {
             pointerEvents: "none" as const,
           }}
         >
-          <div
-            style={isVertical ? { transform: "translateX(-50%)" } : { transform: "translateY(-50%)" }}
-          >
+          <div style={{ transform: "translate(-50%, -50%)" }}>
             <div className="bg-black/90 text-white text-xs px-2.5 py-1 rounded-md whitespace-nowrap shadow-lg border border-white/10">
               {content}
             </div>
@@ -121,7 +117,7 @@ export function Tooltip({ content, side = "top", children }: TooltipProps) {
     <>
       <div
         ref={containerRef}
-        className="inline-flex"
+        className={cn("inline-flex rounded-full [clip-path:circle(50%)]", wrapperClassName)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setHovered(false)}
         onMouseMove={handleMouseMove}

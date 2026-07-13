@@ -8,25 +8,25 @@ export default {
     extend: {
       colors: {
         surface: {
-          DEFAULT: "oklch(0.13 0.02 260)",
-          elevated: "oklch(0.17 0.02 260)",
-          overlay: "oklch(0.21 0.02 260)",
+          DEFAULT: "oklch(0.23 0.01 250)",
+          elevated: "oklch(0.27 0.01 250)",
+          overlay: "oklch(0.31 0.01 250)",
         },
-        border: "oklch(0.25 0.02 260)",
+        border: "oklch(0.35 0.01 250)",
         primary: {
-          DEFAULT: "oklch(0.65 0.2 250)",
+          DEFAULT: "oklch(0.55 0.22 250)",
           foreground: "#fff",
         },
         muted: {
-          DEFAULT: "oklch(0.30 0.02 260)",
-          foreground: "oklch(0.55 0.02 260)",
+          DEFAULT: "oklch(0.38 0.01 250)",
+          foreground: "oklch(0.60 0.01 250)",
         },
         accent: {
-          DEFAULT: "oklch(0.25 0.02 260)",
-          foreground: "oklch(0.90 0.02 260)",
+          DEFAULT: "oklch(0.35 0.01 250)",
+          foreground: "oklch(0.95 0.01 250)",
         },
         danger: {
-          DEFAULT: "oklch(0.55 0.2 20)",
+          DEFAULT: "oklch(0.52 0.20 15)",
           foreground: "#fff",
         },
       },

@@ -124,7 +124,7 @@ export const ModalBody = ({
           <motion.div
             ref={modalRef}
             className={cn(
-              "min-h-[50%] max-h-[90%] md:max-w-[40%] bg-white dark:bg-neutral-950 border border-oklch(0.92 0.004 286.32) border-transparent dark:border-neutral-800 md:rounded-2xl relative z-50 flex flex-col flex-1 overflow-hidden dark:border-oklch(1 0 0 / 10%)",
+              "min-h-[50%] max-h-[90%] md:max-w-[40%] bg-surface-elevated border border-border md:rounded-2xl relative z-50 flex flex-col flex-1 overflow-hidden",
               className
             )}
             variants={{
@@ -176,7 +176,7 @@ export const ModalFooter = ({
   return (
     <div
       className={cn(
-        "flex justify-end p-4 bg-gray-100 dark:bg-neutral-900",
+        "flex justify-end p-4 bg-surface",
         className
       )}
     >
@@ -209,7 +209,7 @@ const CloseIcon = () => {
   return (
     <button
       onClick={() => setOpen(false)}
-      className="absolute top-3 right-3 group z-50 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+      className="absolute top-3 right-3 group z-50 p-1.5 rounded-lg hover:bg-surface-overlay transition-colors"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

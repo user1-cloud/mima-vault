@@ -44,7 +44,7 @@ import {
 import { Modal, ModalBody, ModalContent } from "@/components/ui/animated-modal";
 import { CardSpotlight } from "@/components/ui/card-spotlight";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
-import { LangSwitcher } from "./lang-switcher";
+import { AppSettingsTabs } from "./app-settings";
 import { WaveBackground } from "./wave-background";
 import { VaultCard } from "./vault-card";
 
@@ -82,7 +82,7 @@ function ViewWrapper({ children }: { children: React.ReactNode }) {
         transition={{ delay: 0.3 }}
         className="flex justify-center"
       >
-        <LangSwitcher />
+        <AppSettingsTabs />
       </motion.div>
     </div>
   );
@@ -712,9 +712,19 @@ export function VaultList() {
             </div>
             <h2 className="text-lg font-semibold mb-2">{t("confirmDeleteVault")}</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              {t("confirmDeleteVaultMessage", {
-                name: vaults.find((v) => v.id === deleteId)?.name ?? "",
-              })}
+              {(() => {
+                const name = vaults.find((v) => v.id === deleteId)?.name ?? "";
+                const msg = t("confirmDeleteVaultMessage", { name });
+                const idx = msg.indexOf(name);
+                if (idx === -1) return msg;
+                return (
+                  <>
+                    {msg.slice(0, idx)}
+                    <span className="font-semibold text-primary">{name}</span>
+                    {msg.slice(idx + name.length)}
+                  </>
+                );
+              })()}
             </p>
             <div className="bg-danger/5 border border-danger/20 rounded-lg p-3 text-sm text-danger/90 text-center mb-4">
               {t("deleteVaultWarning")}
