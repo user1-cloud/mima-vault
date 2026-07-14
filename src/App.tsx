@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useView } from "@/lib/navigation";
+import { isDesktop } from "@/lib/platform";
 import { VaultList } from "@/components/app/vault-list";
 import { Vault } from "@/components/app/vault";
 
@@ -14,5 +15,14 @@ export default function App() {
 
   const view = useView();
 
-  return view === "vault" ? <Vault /> : <VaultList />;
+  const desktop = isDesktop();
+
+  return (
+    <div
+      {...(desktop ? { "data-tauri-drag-region": "deep" } : {})}
+      className="h-full"
+    >
+      {view === "vault" ? <Vault /> : <VaultList />}
+    </div>
+  );
 }

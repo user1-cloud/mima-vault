@@ -28,9 +28,11 @@ import {
   GripVertical,
 } from "lucide-react";
 
+import { WindowControls } from "@/components/app/window-controls";
 import { useApp, type Entry } from "@/stores/app";
 import type { TotpCode } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
+import { isDesktop } from "@/lib/platform";
 import { t } from "@/lib/i18n";
 import { open } from "@tauri-apps/plugin-shell";
 import { save, open as openFile } from "@tauri-apps/plugin-dialog";
@@ -273,6 +275,11 @@ export function Vault() {
 
   return (
     <div className="h-full flex bg-surface relative overflow-hidden">
+      {isDesktop() && (
+        <div className="absolute top-0 right-0 z-50">
+          <WindowControls />
+        </div>
+      )}
       {/* Sidebar */}
       <div className={`w-full md:w-72 lg:w-80 flex flex-col relative z-10 bg-surface-elevated ${selected ? 'hidden md:flex' : ''}`}>
         {/* Header */}

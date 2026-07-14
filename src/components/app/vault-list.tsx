@@ -16,8 +16,10 @@ import {
   Clock,
   Trash2,
 } from "lucide-react";
+import { WindowControls } from "@/components/app/window-controls";
 import mimaIcon from "@/assets/mima.svg";
 import { useApp, type VaultInfo } from "@/stores/app";
+import { isDesktop } from "@/lib/platform";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { IconButton } from "@/components/ui/icon-button";
@@ -264,6 +266,11 @@ export function VaultList() {
 
   return (
     <div className="h-full overflow-y-auto bg-surface p-4 relative">
+      {isDesktop() && (
+        <div className="absolute top-0 right-0 z-50">
+          <WindowControls />
+        </div>
+      )}
       <div className="fixed inset-0 z-0">
         <WaveBackground />
       </div>
