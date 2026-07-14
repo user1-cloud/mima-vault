@@ -8,6 +8,7 @@ import jsQR from "jsqr";
 import { useApp, type Entry } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
+import { useBackLayer } from "@/lib/history-back";
 import { IconButton } from "@/components/ui/icon-button";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { SecondaryButton } from "@/components/ui/secondary-button";
@@ -40,6 +41,7 @@ interface Props {
 }
 
 export function EntryDialog({ open, onOpenChange, entry }: Props) {
+  useBackLayer(open, () => onOpenChange(false));
   return (
     <Modal open={open} onOpenChange={onOpenChange}>
       <EntryDialogInner open={open} onOpenChange={onOpenChange} entry={entry} />

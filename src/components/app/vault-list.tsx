@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useNavigateWithTransition } from "@/lib/view-transition";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { navigateToWithTransition } from "@/lib/navigation";
+import { useBackLayer } from "@/lib/history-back";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import {
   Lock,
@@ -119,7 +120,6 @@ function ViewWrapper({ children }: { children: React.ReactNode }) {
 }
 
 export function VaultList() {
-  const navigate = useNavigateWithTransition();
   const { vaults, loadVaults, createVault, deleteVault, openVault, checkBiometricEnabled, biometricUnlock } = useApp();
 
   useLocale();
@@ -174,58 +174,10 @@ export function VaultList() {
     }
   }, [unlockingVaultId, checkBiometricEnabled]);
 
-  const showAllVaultsRef = useRef(showAllVaults);
-  showAllVaultsRef.current = showAllVaults;
-  const unlockingRef = useRef<number | null>(unlockingVaultId);
-  unlockingRef.current = unlockingVaultId;
-  const showCreateRef = useRef(showCreate);
-  showCreateRef.current = showCreate;
-  const deleteIdRef = useRef<number | null>(deleteId);
-  deleteIdRef.current = deleteId;
-
-  useEffect(() => {
-    const handlePopState = () => {
-      if (deleteIdRef.current !== null) {
-        setDeleteId(null);
-        return;
-      }
-      if (unlockingRef.current !== null) {
-        setUnlockingVaultId(null);
-        setUnlockPassword("");
-        setUnlockError("");
-        return;
-      }
-      if (showCreateRef.current) {
-        setShowCreate(false);
-        setError("");
-        return;
-      }
-      if (showAllVaultsRef.current) {
-        setShowAllVaults(false);
-        return;
-      }
-    };
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  useEffect(() => {
-    if (showAllVaults) {
-      window.history.pushState({ __view: "allVaults" }, "", window.location.href);
-    }
-  }, [showAllVaults]);
-
-  useEffect(() => {
-    if (unlockingVaultId !== null) {
-      window.history.pushState({ __view: "unlock" }, "", window.location.href);
-    }
-  }, [unlockingVaultId]);
-
-  useEffect(() => {
-    if (showCreate) {
-      window.history.pushState({ __view: "create" }, "", window.location.href);
-    }
-  }, [showCreate]);
+  useBackLayer(deleteId !== null, () => setDeleteId(null));
+  useBackLayer(unlockingVaultId !== null, () => { setUnlockingVaultId(null); setUnlockPassword(""); setUnlockError(""); });
+  useBackLayer(showCreate, () => { setShowCreate(false); setError(""); });
+  useBackLayer(showAllVaults, () => setShowAllVaults(false));
 
   const handleCreate = useCallback(async () => {
     if (!vaultName.trim()) {
@@ -244,14 +196,14 @@ export function VaultList() {
     setError("");
     try {
       await createVault(vaultName, password);
-      navigate("/vault");
+      navigateToWithTransition("vault");
     } catch (e) {
       const msg = String(e);
       setError(msg === "A vault with this name already exists" ? t("vaultNameDuplicate") : msg);
     } finally {
       setCreating(false);
     }
-  }, [vaultName, password, confirm, createVault, navigate]);
+  }, [vaultName, password, confirm, createVault]);
 
   const handleDelete = useCallback(
     async (id: number) => {
@@ -268,7 +220,7 @@ export function VaultList() {
     try {
       const ok = await openVault(unlockingVaultId, unlockPassword);
       if (ok) {
-        navigate("/vault");
+        navigateToWithTransition("vault");
       } else {
         setUnlockError(t("incorrectPassword"));
       }
@@ -277,7 +229,7 @@ export function VaultList() {
     } finally {
       setUnlockLoading(false);
     }
-  }, [unlockingVaultId, unlockPassword, openVault, navigate]);
+  }, [unlockingVaultId, unlockPassword, openVault]);
 
   const handleBiometricUnlock = useCallback(async () => {
     if (unlockingVaultId === null) return;
@@ -286,7 +238,7 @@ export function VaultList() {
     try {
       const ok = await biometricUnlock(unlockingVaultId);
       if (ok) {
-        navigate("/vault");
+        navigateToWithTransition("vault");
       } else {
         setUnlockError(t("biometricFailed"));
       }
@@ -295,7 +247,7 @@ export function VaultList() {
     } finally {
       setBiometricLoading(false);
     }
-  }, [unlockingVaultId, biometricUnlock, navigate]);
+  }, [unlockingVaultId, biometricUnlock]);
 
   if (loading) {
     return (

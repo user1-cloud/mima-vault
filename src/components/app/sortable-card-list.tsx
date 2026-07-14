@@ -205,7 +205,7 @@ export function SortableCardList<T extends { id: number }>({
   }, [items]);
 
   return (
-    <div className={`flex flex-col min-h-0 ${className ?? ""}`}>
+    <div className={`flex flex-col flex-1 min-h-0 ${className ?? ""}`}>
       {/* Toolbar */}
       {toolbar && (
         <div className="flex items-center gap-1 shrink-0 mb-2 px-2">

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { useView } from "@/lib/navigation";
 import { VaultList } from "@/components/app/vault-list";
 import { Vault } from "@/components/app/vault";
 
@@ -12,10 +12,7 @@ export default function App() {
     }
   }, []);
 
-  return (
-    <Routes>
-      <Route path="/" element={<VaultList />} />
-      <Route path="/vault" element={<Vault />} />
-    </Routes>
-  );
+  const view = useView();
+
+  return view === "vault" ? <Vault /> : <VaultList />;
 }

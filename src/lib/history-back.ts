@@ -1,23 +1,76 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
-type BackHandler = (e: PopStateEvent) => boolean;
+interface BackEntry {
+  id: number;
+  onBack: () => void;
+}
 
-const stack: BackHandler[] = [];
-export const isHistoryBackConsumed = { current: false };
+const backStack: BackEntry[] = [];
+let isProgrammaticBack = false;
+let popstatePoppedId: number | null = null;
+let nextId = 1;
 
-window.addEventListener('popstate', (e) => {
-  if (stack.length > 0) {
-    stack[0](e);
+const onPopState = () => {
+  if (isProgrammaticBack) {
+    isProgrammaticBack = false;
+    return;
   }
-});
+  if (backStack.length === 0) return;
+  const top = backStack[backStack.length - 1];
+  popstatePoppedId = top.id;
+  top.onBack();
+};
 
-export function useHistoryBack(handler: BackHandler | null, deps: unknown[]) {
+let listenerInstalled = false;
+
+function ensureListener() {
+  if (listenerInstalled) return;
+  listenerInstalled = true;
+  window.addEventListener("popstate", onPopState, { capture: true });
+}
+
+export function useBackLayer(active: boolean, onBack: () => void) {
+  const idRef = useRef(0);
+  const onBackRef = useRef(onBack);
+  onBackRef.current = onBack;
+  const pushedPathRef = useRef("");
+
   useEffect(() => {
-    if (!handler) return;
-    stack.unshift(handler);
+    if (!active) {
+      idRef.current = 0;
+      return;
+    }
+
+    ensureListener();
+
+    const id = nextId++;
+    idRef.current = id;
+    pushedPathRef.current = window.location.pathname + window.location.search;
+
+    backStack.push({ id, onBack: () => onBackRef.current() });
+
+    window.history.pushState(
+      { ...window.history.state, __backLayer: id },
+      "",
+      window.location.href,
+    );
+
     return () => {
-      const idx = stack.indexOf(handler);
-      if (idx >= 0) stack.splice(idx, 1);
+      const idx = backStack.findIndex((e) => e.id === id);
+      if (idx === -1) return;
+
+      if (popstatePoppedId === id) {
+        popstatePoppedId = null;
+        backStack.splice(idx, 1);
+        return;
+      }
+
+      backStack.splice(idx, 1);
+
+      if (window.location.pathname + window.location.search === pushedPathRef.current) {
+        isProgrammaticBack = true;
+        window.history.back();
+      }
     };
-  }, deps);
+  }, [active]);
 }

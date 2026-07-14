@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { useNavigateWithTransition } from "@/lib/view-transition";
+import { replaceTo } from "@/lib/navigation";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import {
   Search,
@@ -20,8 +20,6 @@ import {
   AlertTriangle,
   Download,
   Upload,
-  Fingerprint,
-  ShieldOff,
   Timer,
   ArrowUpAZ,
   ArrowDownAZ,
@@ -38,7 +36,6 @@ import { IconButton } from "@/components/ui/icon-button";
 import { HighlightIconButton } from "@/components/ui/highlight-icon-button";
 import { DangerIconButton } from "@/components/ui/danger-icon-button";
 import { StatefulButton } from "@/components/ui/stateful-button";
-import { PrimaryButton } from "@/components/ui/primary-button";
 import { SecondaryButton } from "@/components/ui/secondary-button";
 import { DangerButton } from "@/components/ui/danger-button";
 import { useAutoLock } from "./use-auto-lock";
@@ -52,8 +49,10 @@ import { EncryptedText } from "@/components/ui/encrypted-text";
 import { ListCardIcon, ListCardContent } from "./list-card";
 import { SortableCardList, type SortOption } from "./sortable-card-list";
 
+import { useBackLayer } from "@/lib/history-back";
 import { Input } from "@/components/ui/input";
 import { EntryDialog } from "./entry-dialog";
+import { VaultSettingsDialog } from "./vault-settings-dialog";
 import { AppSettingsButton } from "./app-settings";
 
 function useDebounce<T>(value: T, ms: number): T {
@@ -143,8 +142,12 @@ const fieldCardVariants: Variants = {
   }),
 };
 
+function DetailBackLayer({ onDeselect, children }: { onDeselect: () => void; children: React.ReactNode }) {
+  useBackLayer(true, onDeselect);
+  return <>{children}</>;
+}
+
 export function Vault() {
-  const navigate = useNavigateWithTransition();
   const {
     entries,
     searchQuery,
@@ -156,13 +159,7 @@ export function Vault() {
     closeVault,
     deleteEntry,
     copyToClipboard,
-    renameVault,
     reorderEntries,
-    verifyPassword,
-    checkBiometricAvailable,
-    checkBiometricEnabled,
-    enableBiometric,
-    disableBiometric,
     autoLockTimeout,
     setAutoLockTimeout,
   } = useApp();
@@ -171,9 +168,9 @@ export function Vault() {
 
   useEffect(() => {
     if (isLocked || !activeVault) {
-      navigate("/", { replace: true });
+      replaceTo("list");
     }
-  }, [isLocked, activeVault, navigate]);
+  }, [isLocked, activeVault]);
 
   const debouncedSearch = useDebounce(searchQuery, 200);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -182,11 +179,6 @@ export function Vault() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [vaultNameInput, setVaultNameInput] = useState("");
-  const [bioAvailable, setBioAvailable] = useState(false);
-  const [bioEnabled, setBioEnabled] = useState(false);
-  const [bioPassword, setBioPassword] = useState("");
-  const [bioError, setBioError] = useState("");
   const [entrySortKey, setEntrySortKey] = useState("name-asc");
   const [entryFilters, setEntryFilters] = useState<string[]>([]);
 
@@ -213,8 +205,8 @@ export function Vault() {
 
   const handleClose = useCallback(async () => {
     await closeVault();
-    navigate("/", { replace: true });
-  }, [closeVault, navigate]);
+    replaceTo("list");
+  }, [closeVault]);
 
   useAutoLock(autoLockTimeout, handleClose);
 
@@ -237,50 +229,6 @@ export function Vault() {
     setDialogOpen(true);
   }, []);
 
-  const handleOpenSettings = useCallback(() => {
-    setVaultNameInput(activeVault?.name ?? "");
-    setBioPassword("");
-    setBioError("");
-    if (activeVault) {
-      checkBiometricAvailable().then(setBioAvailable);
-      checkBiometricEnabled(activeVault.id).then(setBioEnabled);
-    }
-    setSettingsOpen(true);
-  }, [activeVault, checkBiometricAvailable, checkBiometricEnabled]);
-
-  const handleSaveSettings = useCallback(async () => {
-    if (!activeVault || !vaultNameInput.trim()) return;
-    await renameVault(activeVault.id, vaultNameInput.trim());
-    setSettingsOpen(false);
-  }, [activeVault, vaultNameInput, renameVault]);
-
-  const handleEnableBiometric = useCallback(async () => {
-    if (!activeVault || !bioPassword) {
-      setBioError(t("passwordRequired"));
-      throw new Error("password required");
-    }
-    setBioError("");
-    const ok = await verifyPassword(bioPassword);
-    if (!ok) {
-      setBioError(t("incorrectPassword"));
-      throw new Error("incorrect password");
-    }
-    try {
-      await enableBiometric(activeVault.id, bioPassword);
-    } catch (e) {
-      setBioError(String(e));
-      throw e;
-    }
-    setBioEnabled(true);
-    setBioPassword("");
-  }, [activeVault, bioPassword, enableBiometric, verifyPassword]);
-
-  const handleDisableBiometric = useCallback(async () => {
-    if (!activeVault) return;
-    await disableBiometric(activeVault.id);
-    setBioEnabled(false);
-  }, [activeVault, disableBiometric]);
-
   const handleDelete = useCallback(
     async (id: number) => {
       await deleteEntry(id);
@@ -301,61 +249,6 @@ export function Vault() {
     [reorderEntries]
   );
 
-  const pushedDetailRef = useRef<number | null>(null);
-  const dialogOpenRef = useRef(false);
-  dialogOpenRef.current = dialogOpen || settingsOpen;
-
-  useEffect(() => {
-    if (!selected) {
-      pushedDetailRef.current = null;
-      return;
-    }
-
-    if (pushedDetailRef.current === selected.id) return;
-    pushedDetailRef.current = selected.id;
-
-    window.history.pushState({ __mimaDetail: selected.id }, '', window.location.href);
-
-    const handlePopState = () => {
-      if (dialogOpenRef.current) return;
-      const { selectedId: currentId } = useApp.getState();
-      if (currentId !== null) {
-        selectEntry(null);
-        pushedDetailRef.current = null;
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [selected?.id]);
-
-  useEffect(() => {
-    if (!dialogOpen) return;
-
-    window.history.pushState({ __mimaDialog: true }, '', window.location.href);
-
-    const handlePopState = () => {
-      setDialogOpen(false);
-      setEditingEntry(null);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [dialogOpen]);
-
-  useEffect(() => {
-    if (!settingsOpen) return;
-
-    window.history.pushState({ __mimaSettings: true }, '', window.location.href);
-
-    const handlePopState = () => {
-      setSettingsOpen(false);
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [settingsOpen]);
-
   return (
     <div className="h-full flex bg-surface relative overflow-hidden">
       {/* Sidebar */}
@@ -371,7 +264,7 @@ export function Vault() {
               <Tooltip content={t("vaultSettings")} side="bottom">
                 <IconButton
                   className="h-7 w-7 shrink-0"
-                  onClick={handleOpenSettings}
+                  onClick={() => setSettingsOpen(true)}
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </IconButton>
@@ -398,7 +291,7 @@ export function Vault() {
         </div>
 
         {/* Entry list */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 flex flex-col">
           <SortableCardList
             items={filtered}
             renderItem={(entry, mode) => {
@@ -529,9 +422,10 @@ export function Vault() {
 
       {/* Detail pane */}
       <div className={`flex-1 flex flex-col relative z-10 ${selected ? '' : 'hidden md:flex'}`}>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-auto">
           <AnimatePresence mode="wait">
             {selected ? (
+              <DetailBackLayer onDeselect={() => selectEntry(null)}>
               <motion.div
                 key={selected.id}
                 variants={detailVariants}
@@ -639,6 +533,7 @@ export function Vault() {
                   <div className="h-12" />
                 </div>
               </motion.div>
+              </DetailBackLayer>
             ) : (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -682,80 +577,7 @@ export function Vault() {
         entry={editingEntry}
       />
 
-      <Modal open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <ModalBody>
-          <ModalContent>
-            <h2 className="text-lg font-semibold mb-2">{t("vaultSettings")}</h2>
-            <p className="text-sm text-muted-foreground mb-4">{t("vaultSettingsDesc")}</p>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{t("vaultName")}</label>
-                <Input
-                  value={vaultNameInput}
-                  onChange={(e) => setVaultNameInput(e.target.value)}
-                  placeholder={t("enterVaultName")}
-                />
-              </div>
-
-              {bioAvailable && (
-                <>
-                  <div className="border-t border-border" />
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Fingerprint className="w-4 h-4 text-primary" />
-                      <span className="text-sm font-medium">{t("biometricUnlock")}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{t("biometricDesc")}</p>
-
-                    {bioEnabled ? (
-                      <PrimaryButton
-                        size="sm"
-                        className="w-full"
-                        onClick={handleDisableBiometric}
-                      >
-                        <ShieldOff className="w-4 h-4 mr-2" />
-                        {t("disableBiometric")}
-                      </PrimaryButton>
-                    ) : (
-                      <div className="space-y-2">
-                        <Input
-                          type="password"
-                          value={bioPassword}
-                          onChange={(e) => setBioPassword(e.target.value)}
-                          placeholder={t("enterPasswordToEnable")}
-                          autoComplete="off"
-                          className="font-mono"
-                        />
-                        {bioError && (
-                          <p className="text-xs text-danger">{bioError}</p>
-                        )}
-                        <PrimaryButton
-                          className="w-full"
-                          disabled={!bioPassword}
-                          onClick={handleEnableBiometric}
-                        >
-                          <Fingerprint className="w-4 h-4" />
-                          {t("enableBiometric")}
-                        </PrimaryButton>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div className="flex gap-3 justify-end pt-2">
-              <SecondaryButton onClick={() => setSettingsOpen(false)}>
-                {t("cancel")}
-              </SecondaryButton>
-              <PrimaryButton onClick={handleSaveSettings} disabled={!vaultNameInput.trim()}>
-                {t("saveVaultSettings")}
-              </PrimaryButton>
-            </div>
-          </ModalContent>
-        </ModalBody>
-      </Modal>
+      <VaultSettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 
       <Modal open={deleteConfirmId !== null} onOpenChange={() => setDeleteConfirmId(null)}>
         <ModalBody>
@@ -839,12 +661,12 @@ function FieldCard({
           </CardTitle>
           <div className="flex items-center gap-2">
             <span
-              className={`flex-1 text-sm text-white/90 select-text ${
+              className={`flex-1 text-sm text-white/90 select-text min-w-0 ${
                 isSecret && !revealed
                   ? "font-mono tracking-[0.3em]"
                   : multiline
-                    ? "whitespace-pre-wrap"
-                    : ""
+                    ? "whitespace-pre-wrap break-words max-h-48 overflow-y-auto"
+                    : "break-all"
               }`}
             >
               {value}
