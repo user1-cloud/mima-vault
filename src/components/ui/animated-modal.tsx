@@ -10,6 +10,8 @@ import React, {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import { isHistoryBackConsumed } from "@/lib/history-back";
+import { CloseButton } from "./close-button";
 
 interface ModalContextType {
   open: boolean;
@@ -46,13 +48,114 @@ export function Modal({ children, open, onOpenChange }: { children: ReactNode; o
   );
 };
 
+const modalOpenCount = { current: 0 };
+export const isModalOpenRef = { get current() { return modalOpenCount.current > 0; } };
+
 function ModalChild({ children, open, onOpenChange }: { children: ReactNode; open: boolean; onOpenChange: (open: boolean) => void }) {
   const context = useModal();
+  const onOpenChangeRef = useRef(onOpenChange);
+  onOpenChangeRef.current = onOpenChange;
+  const modalIdRef = useRef<string | null>(null);
+  const closedByPopstate = useRef(false);
 
   useEffect(() => { context.setOpen(open); }, [open]);
   useEffect(() => {
-    if (!context.open && open) onOpenChange(false);
+    if (!context.open && open) onOpenChangeRef.current(false);
   }, [context.open]);
+
+  // Effect A: push history entry on open. Cleanup calls history.back() when
+  // modal closes programmatically (X button / click-outside), so the history
+  // entry is removed. When the user pressed back, closedByPopstate is already
+  // true and we skip history.back() — the browser already popped the entry.
+  useEffect(() => {
+    if (!open) {
+      console.log('[modal] EffectA: open=false, clearing modalId');
+      modalIdRef.current = null;
+      return;
+    }
+
+    const modalId = crypto.randomUUID();
+    modalIdRef.current = modalId;
+    modalOpenCount.current++;
+    console.log('[modal] EffectA: pushState modalId=', modalId, 'history.length before=', window.history.length);
+    window.history.pushState({ __mima_modal: modalId }, '', window.location.href);
+    console.log('[modal] EffectA: pushState done, history.length after=', window.history.length);
+    closedByPopstate.current = false;
+
+    return () => {
+      console.log('[modal] EffectA cleanup: closedByPopstate=', closedByPopstate.current, 'modalId=', modalIdRef.current);
+      modalOpenCount.current = Math.max(0, modalOpenCount.current - 1);
+      if (!closedByPopstate.current) {
+        // Closed via X / click-outside — need to clean up the history entry.
+        // Set flag so the capture listener (Effect B) knows this is a
+        // programmatic back, then call history.back().
+        console.log('[modal] EffectA cleanup: setting isHistoryBackConsumed=true, calling history.back()');
+        isHistoryBackConsumed.current = true;
+        window.history.back();
+        // history.back() fires popstate synchronously.
+        // Effect B's capture listener is still registered (Effect B cleanup
+        // is empty, so removeEventListener hasn't run yet).
+        // The capture listener intercepts the popstate, sees the flag,
+        // calls stopImmediatePropagation(), and removes itself.
+      } else {
+        console.log('[modal] EffectA cleanup: skipping history.back (already closed by popstate)');
+      }
+    };
+  }, [open]);
+
+  // Effect B: capture-phase popstate listener.
+  // Declared AFTER Effect A. Cleanup is EMPTY — the listener removes ITSELF
+  // inside the callback after intercepting a popstate.
+  //
+  // Execution order when user presses X to close:
+  //   1. EffectA cleanup runs: sets isHistoryBackConsumed=true, calls history.back()
+  //   2. history.back() fires popstate SYNCHRONOUSLY
+  //   3. Capture listener (still registered) fires: sees flag, calls
+  //      stopImmediatePropagation() + removes itself
+  //   4. EffectB cleanup runs: empty, listener already removed
+  //
+  // Execution order when user presses mouse-side-button:
+  //   1. Browser fires popstate
+  //   2. Capture listener fires: sets closedByPopstate=true, calls
+  //      onOpenChange(false), calls stopImmediatePropagation(), removes itself
+  //   3. React processes state update: open → false
+  //   4. EffectA cleanup: closedByPopstate is true → skip history.back()
+  //   5. EffectB cleanup: empty
+  useEffect(() => {
+    if (!open) return;
+
+    const onPopState = (e: PopStateEvent) => {
+      console.log('[modal] EffectB capture: popstate fired, e.state=', JSON.stringify(e.state), 'isHistoryBackConsumed=', isHistoryBackConsumed.current);
+
+      if (isHistoryBackConsumed.current) {
+        // Programmatic back from EffectA cleanup.
+        console.log('[modal] EffectB capture: programmatic back, consuming flag, stopImmediatePropagation, removing self');
+        isHistoryBackConsumed.current = false;
+        e.stopImmediatePropagation();
+        window.removeEventListener('popstate', onPopState, { capture: true });
+        console.log('[modal] EffectB capture: self-removed after programmatic back');
+        return;
+      }
+
+      // User pressed back / mouse side button.
+      console.log('[modal] EffectB capture: user back, closing modal, stopImmediatePropagation, removing self');
+      closedByPopstate.current = true;
+      onOpenChangeRef.current(false);
+      e.stopImmediatePropagation();
+      window.removeEventListener('popstate', onPopState, { capture: true });
+      console.log('[modal] EffectB capture: self-removed after user back');
+    };
+
+    window.addEventListener('popstate', onPopState, { capture: true });
+    console.log('[modal] EffectB: capture listener registered');
+
+    // Cleanup is intentionally empty. The listener removes itself inside the
+    // callback. If we removed it here, it would be gone before history.back()'s
+    // popstate fires (since EffectA cleanup also runs during this cleanup phase).
+    return () => {
+      console.log('[modal] EffectB cleanup: empty (listener already self-removed or will self-remove)');
+    };
+  }, [open]);
 
   return <>{children}</>;
 };
@@ -207,27 +310,10 @@ const Overlay = ({ className }: { className?: string }) => {
 const CloseIcon = () => {
   const { setOpen } = useModal();
   return (
-    <button
+    <CloseButton
       onClick={() => setOpen(false)}
-      className="absolute top-3 right-3 group z-50 p-1.5 rounded-lg hover:bg-surface-overlay transition-colors"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-black dark:text-white h-5 w-5 group-hover:scale-110 group-hover:rotate-3 transition duration-200"
-      >
-        <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-        <path d="M18 6l-12 12" />
-        <path d="M6 6l12 12" />
-      </svg>
-    </button>
+      className="absolute top-3 right-3 z-50"
+    />
   );
 };
 

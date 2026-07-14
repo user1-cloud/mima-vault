@@ -3,7 +3,7 @@ import { buttonVariants } from "./button";
 import type { VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
-interface IconButtonProps extends HTMLMotionProps<"button"> {
+export interface IconButtonProps extends HTMLMotionProps<"button"> {
   variant?: VariantProps<typeof buttonVariants>["variant"];
 }
 

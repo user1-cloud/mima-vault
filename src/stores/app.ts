@@ -26,6 +26,8 @@ export interface VaultInfo {
   name: string;
   path: string;
   created_at: string;
+  updated_at: string;
+  last_opened_at?: string;
 }
 
 export interface ExportEntry {

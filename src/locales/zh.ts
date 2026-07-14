@@ -115,6 +115,19 @@ const zh = {
   scanQr: "从剪贴板扫描二维码",
   qrNotFound: "剪贴板中未识别到二维码",
   qrScanFailed: "扫描失败，请确认剪贴板中有二维码截图",
+  compactView: "简要视图",
+  detailView: "详细视图",
+  sortBy: "排序方式",
+  filter: "筛选",
+  noItems: "暂无条目",
+  loadMore: "加载更多",
+  remaining: "剩余 {count} 条",
+  sortByDate: "按修改时间",
+  sortByName: "按名称",
+  sortByNameAZ: "名称 A-Z",
+  sortByNameZA: "名称 Z-A",
+  sortByDateNewest: "最近优先",
+  sortByDateOldest: "最早优先",
 };
 
 export type Translations = typeof zh;

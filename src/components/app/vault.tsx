@@ -20,31 +20,13 @@ import {
   AlertTriangle,
   Download,
   Upload,
-  GripVertical,
   Fingerprint,
   ShieldOff,
   Timer,
+  ArrowUpAZ,
+  ArrowDownAZ,
+  Clock,
 } from "lucide-react";
-import {
-  DndContext,
-  DragOverlay,
-  rectIntersection,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragOverEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  arrayMove,
-
-
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
 
 import { useApp, type Entry } from "@/stores/app";
 import type { TotpCode } from "@/stores/app";
@@ -68,7 +50,7 @@ import { Modal, ModalBody, ModalContent } from "@/components/ui/animated-modal";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { EncryptedText } from "@/components/ui/encrypted-text";
 import { ListCardIcon, ListCardContent } from "./list-card";
-import { SortableCardItem } from "./sortable-card-item";
+import { SortableCardList, type SortOption } from "./sortable-card-list";
 
 import { Input } from "@/components/ui/input";
 import { EntryDialog } from "./entry-dialog";
@@ -99,39 +81,41 @@ function avatarColor(name: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-function SortableEntryItem({
-  entry,
-  isSelected,
-  onSelect,
-}: {
-  entry: Entry;
-  isSelected: boolean;
-  onSelect: () => void;
-}) {
-  return (
-    <SortableCardItem id={entry.id} className={isSelected ? "bg-surface-overlay ring-1 ring-primary/30" : ""}>
-      <button
-        type="button"
-        onClick={onSelect}
-        className="flex-1 flex items-center gap-3 p-3 pl-1 text-left min-w-0"
-      >
-        <ListCardIcon className={isSelected ? "rounded-full bg-primary/20 text-primary ring-2 ring-primary/20" : `rounded-full ${avatarColor(entry.name)}`}>
-          <span className="text-sm font-semibold">
-            {entry.name.charAt(0).toUpperCase()}
-          </span>
-        </ListCardIcon>
-        <ListCardContent name={entry.name} subtitle={entry.username} />
-        {isSelected && (
-          <motion.div
-            initial={{ scale: 0, height: 0 }}
-            animate={{ scale: 1, height: 32 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
-            className="w-1.5 rounded-full bg-primary shrink-0"
-          />
-        )}
-      </button>
-    </SortableCardItem>
-  );
+const entrySortOptions: SortOption[] = [
+  { key: "name-asc", icon: <ArrowUpAZ className="w-4 h-4" />, labelKey: "sortByNameAZ" },
+  { key: "name-desc", icon: <ArrowDownAZ className="w-4 h-4" />, labelKey: "sortByNameZA" },
+  { key: "created-desc", icon: <Clock className="w-4 h-4" />, labelKey: "sortByDateNewest" },
+  { key: "created-asc", icon: <Clock className="w-4 h-4" />, labelKey: "sortByDateOldest" },
+];
+
+function sortEntries(entries: Entry[], key: string): Entry[] {
+  const sorted = [...entries];
+  switch (key) {
+    case "name-asc":
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case "name-desc":
+      sorted.sort((a, b) => b.name.localeCompare(a.name));
+      break;
+    case "created-desc":
+      sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      break;
+    case "created-asc":
+      sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      break;
+  }
+  return sorted;
+}
+
+function entryFilterCategories(entries: Entry[]) {
+  const letters = new Map<string, number>();
+  for (const e of entries) {
+    const letter = e.name.charAt(0).toUpperCase();
+    letters.set(letter, (letters.get(letter) ?? 0) + 1);
+  }
+  return Array.from(letters.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, count]) => ({ key, labelKey: key, count }));
 }
 
 const detailVariants: Variants = {
@@ -197,34 +181,34 @@ export function Vault() {
   const [showPassword, setShowPassword] = useState<Record<number, boolean>>({});
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
-  const [dragActive, setDragActive] = useState(false);
-  const [activeDragEntry, setActiveDragEntry] = useState<Entry | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [vaultNameInput, setVaultNameInput] = useState("");
   const [bioAvailable, setBioAvailable] = useState(false);
   const [bioEnabled, setBioEnabled] = useState(false);
   const [bioPassword, setBioPassword] = useState("");
   const [bioError, setBioError] = useState("");
+  const [entrySortKey, setEntrySortKey] = useState("name-asc");
+  const [entryFilters, setEntryFilters] = useState<string[]>([]);
 
-  const [items, setItems] = useState<Entry[]>(entries);
-  useEffect(() => {
-    setItems(entries);
-  }, [entries]);
+  const sortedEntries = useMemo(
+    () => sortEntries(entries, entrySortKey),
+    [entries, entrySortKey]
+  );
 
   const filtered = useMemo(() => {
-    if (!debouncedSearch.trim()) return items;
+    if (!debouncedSearch.trim()) return sortedEntries;
     const q = debouncedSearch.toLowerCase();
-    return items.filter(
+    return sortedEntries.filter(
       (e) =>
         e.name.toLowerCase().includes(q) ||
         e.username.toLowerCase().includes(q) ||
         (e.url && e.url.toLowerCase().includes(q))
     );
-  }, [items, debouncedSearch]);
+  }, [sortedEntries, debouncedSearch]);
 
   const selected = useMemo(
-    () => items.find((e) => e.id === selectedId) ?? null,
-    [items, selectedId]
+    () => entries.find((e) => e.id === selectedId) ?? null,
+    [entries, selectedId]
   );
 
   const handleClose = useCallback(async () => {
@@ -309,38 +293,12 @@ export function Vault() {
     setShowPassword((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setDragActive(true);
-    const entry = items.find((e) => e.id === event.active.id);
-    if (entry) setActiveDragEntry(entry);
-  }, [items]);
-
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setItems((prev) => {
-      const oldIdx = prev.findIndex((e) => e.id === active.id);
-      const newIdx = prev.findIndex((e) => e.id === over.id);
-      if (oldIdx === -1 || newIdx === -1) return prev;
-      return arrayMove(prev, oldIdx, newIdx);
-    });
-  }, []);
-
-  const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      setDragActive(false);
-      setActiveDragEntry(null);
-      const { active, over } = event;
-      if (!over || active.id === over.id) return;
-      const orders: [number, number][] = items.map((e, i) => [e.id, i * 1000]);
+  const handleReorder = useCallback(
+    (orderedIds: number[]) => {
+      const orders: [number, number][] = orderedIds.map((id, i) => [id, i * 1000]);
       reorderEntries(orders);
     },
-    [items, reorderEntries]
+    [reorderEntries]
   );
 
   const pushedDetailRef = useRef<number | null>(null);
@@ -440,93 +398,81 @@ export function Vault() {
         </div>
 
         {/* Entry list */}
-        <div className="flex-1 overflow-y-auto">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6 text-center">
-              <motion.div
-                animate={{ y: [0, -6, 0] }}
-                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-              >
-                <Key className="w-10 h-10 mb-3 opacity-30" />
-              </motion.div>
-              <p className="text-sm">
-                {debouncedSearch ? t("noMatches") : t("noEntries")}
-              </p>
-              {!debouncedSearch && (
-                <StatefulButton
-                  variant="link"
-                  onClick={handleCreate}
-                  className="mt-1 text-primary"
+        <div className="flex-1 min-h-0">
+          <SortableCardList
+            items={filtered}
+            renderItem={(entry, mode) => {
+              const sel = entry.id === selectedId;
+              if (mode === "compact") {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => selectEntry(entry.id)}
+                    className="flex-1 flex items-center gap-2 px-3 py-2 text-left min-w-0"
+                  >
+                    <span className="text-sm font-medium truncate">{entry.name}</span>
+                    <span className="text-xs text-muted-foreground truncate">{entry.username}</span>
+                    {sel && <span className="flex-1" />}
+                    {sel && <div className="w-1.5 h-6 rounded-full bg-primary shrink-0" />}
+                  </button>
+                );
+              }
+              return (
+                <button
+                  type="button"
+                  onClick={() => selectEntry(entry.id)}
+                  className="flex-1 flex items-center gap-3 p-3 pl-1 text-left min-w-0"
                 >
-                  {t("addFirst")}
-                </StatefulButton>
-              )}
-            </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={rectIntersection}
-              onDragStart={handleDragStart}
-              onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={items.map((e) => e.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <AnimatePresence mode={dragActive ? "sync" : "popLayout"}>
-                  {filtered.map((entry) => (
+                  <ListCardIcon className={sel ? "rounded-full bg-primary/20 text-primary ring-2 ring-primary/20" : `rounded-full ${avatarColor(entry.name)}`}>
+                    <span className="text-sm font-semibold">
+                      {entry.name.charAt(0).toUpperCase()}
+                    </span>
+                  </ListCardIcon>
+                  <ListCardContent name={entry.name} subtitle={entry.username} />
+                  {sel && (
                     <motion.div
-                      key={entry.id}
-                      layout={!dragActive}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={dragActive ? undefined : { opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-                    >
-                      <SortableEntryItem
-                        entry={entry}
-                        isSelected={selectedId === entry.id}
-                        onSelect={() => selectEntry(entry.id)}
-                      />
-                    </motion.div>
-                  ))}
-                </AnimatePresence>
-              </SortableContext>
-              <DragOverlay style={{ pointerEvents: "none" }}>
-                {activeDragEntry ? (
-                  (() => {
-                    const isSelected = activeDragEntry.id === selectedId;
-                    return (
-                      <div className="px-2 py-0.5">
-                        <div className={`rounded-xl flex items-stretch overflow-hidden shadow-lg ${isSelected ? "bg-surface-overlay ring-1 ring-primary/30" : "bg-surface-elevated border border-primary/30"}`}>
-                          <div className="flex items-center justify-center w-9 shrink-0 cursor-grabbing text-muted-foreground">
-                            <GripVertical className="w-5 h-5" />
-                          </div>
-                          <div className="flex-1 flex items-center gap-3 p-3 pl-1 min-w-0">
-                            <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${isSelected ? "bg-primary/20 text-primary ring-2 ring-primary/20" : avatarColor(activeDragEntry.name)}`}>
-                              <span className="text-sm font-semibold">
-                                {activeDragEntry.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium truncate">{activeDragEntry.name}</p>
-                              <p className="text-xs text-muted-foreground truncate mt-0.5">
-                                {activeDragEntry.username}
-                              </p>
-                            </div>
-                            {isSelected && (
-                              <div className="w-1.5 h-8 rounded-full bg-primary shrink-0" />
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          )}
+                      initial={{ scale: 0, height: 0 }}
+                      animate={{ scale: 1, height: 32 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                      className="w-1.5 rounded-full bg-primary shrink-0"
+                    />
+                  )}
+                </button>
+              );
+            }}
+            onReorder={handleReorder}
+            emptyState={
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-6 text-center">
+                <motion.div
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                >
+                  <Key className="w-10 h-10 mb-3 opacity-30" />
+                </motion.div>
+                <p className="text-sm">
+                  {debouncedSearch ? t("noMatches") : t("noEntries")}
+                </p>
+                {!debouncedSearch && (
+                  <StatefulButton
+                    variant="link"
+                    onClick={handleCreate}
+                    className="mt-1 text-primary"
+                  >
+                    {t("addFirst")}
+                  </StatefulButton>
+                )}
+              </div>
+            }
+            toolbar={{
+              displayMode: true,
+              sortOptions: entrySortOptions,
+              activeSort: entrySortKey,
+              onSortChange: setEntrySortKey,
+              getFilterCategories: entryFilterCategories,
+              activeFilters: entryFilters,
+              onFiltersChange: setEntryFilters,
+            }}
+          />
         </div>
 
         {/* Action buttons */}
@@ -820,7 +766,7 @@ export function Vault() {
             <h2 className="text-lg font-semibold mb-2">{t("confirmDelete")}</h2>
             <p className="text-sm text-muted-foreground mb-4">
               {(() => {
-                const name = items.find((e) => e.id === deleteConfirmId)?.name ?? "";
+                const name = entries.find((e) => e.id === deleteConfirmId)?.name ?? "";
                 const msg = t("confirmDeleteMessage", { name });
                 const idx = msg.indexOf(name);
                 if (idx === -1) return msg;

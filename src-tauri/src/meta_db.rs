@@ -23,6 +23,8 @@ pub struct VaultInfo {
     pub name: String,
     pub path: String,
     pub created_at: String,
+    pub updated_at: String,
+    pub last_opened_at: Option<String>,
 }
 
 pub fn init_meta(conn: &Connection) -> Result<(), rusqlite::Error> {
@@ -31,9 +33,23 @@ pub fn init_meta(conn: &Connection) -> Result<(), rusqlite::Error> {
             id          INTEGER PRIMARY KEY AUTOINCREMENT,
             name        TEXT NOT NULL,
             path        TEXT NOT NULL UNIQUE,
-            created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+            created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
         );",
-    )
+    )?;
+    let _ = conn.execute(
+        "ALTER TABLE vaults ADD COLUMN last_opened_at TEXT",
+        [],
+    );
+    let _ = conn.execute(
+        "ALTER TABLE vaults ADD COLUMN updated_at TEXT",
+        [],
+    );
+    let _ = conn.execute(
+        "UPDATE vaults SET updated_at = created_at WHERE updated_at IS NULL",
+        [],
+    );
+    Ok(())
 }
 
 pub fn insert_vault(
@@ -42,7 +58,7 @@ pub fn insert_vault(
     path: &str,
 ) -> Result<i64, rusqlite::Error> {
     conn.execute(
-        "INSERT INTO vaults (name, path) VALUES (?1, ?2)",
+        "INSERT INTO vaults (name, path, updated_at) VALUES (?1, ?2, datetime('now'))",
         params![name, path],
     )?;
     Ok(conn.last_insert_rowid())
@@ -50,7 +66,7 @@ pub fn insert_vault(
 
 pub fn list_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, path, created_at FROM vaults ORDER BY created_at DESC",
+        "SELECT id, name, path, created_at, updated_at, last_opened_at FROM vaults ORDER BY last_opened_at DESC, created_at DESC",
     )?;
     let rows = stmt.query_map([], |row| {
         Ok(VaultInfo {
@@ -58,6 +74,8 @@ pub fn list_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error>
             name: row.get(1)?,
             path: row.get(2)?,
             created_at: row.get(3)?,
+            updated_at: row.get(4)?,
+            last_opened_at: row.get(5)?,
         })
     })?;
     rows.collect()
@@ -65,7 +83,7 @@ pub fn list_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error>
 
 pub fn get_vault(conn: &Connection, id: i64) -> Option<VaultInfo> {
     conn.query_row(
-        "SELECT id, name, path, created_at FROM vaults WHERE id = ?1",
+        "SELECT id, name, path, created_at, updated_at, last_opened_at FROM vaults WHERE id = ?1",
         params![id],
         |row| {
             Ok(VaultInfo {
@@ -73,10 +91,20 @@ pub fn get_vault(conn: &Connection, id: i64) -> Option<VaultInfo> {
                 name: row.get(1)?,
                 path: row.get(2)?,
                 created_at: row.get(3)?,
+                updated_at: row.get(4)?,
+                last_opened_at: row.get(5)?,
             })
         },
     )
     .ok()
+}
+
+pub fn touch_vault(conn: &Connection, id: i64) -> Result<(), rusqlite::Error> {
+    conn.execute(
+        "UPDATE vaults SET last_opened_at = datetime('now') WHERE id = ?1",
+        params![id],
+    )?;
+    Ok(())
 }
 
 pub fn rename_vault(
@@ -85,7 +113,7 @@ pub fn rename_vault(
     new_name: &str,
 ) -> Result<VaultInfo, rusqlite::Error> {
     conn.execute(
-        "UPDATE vaults SET name = ?1 WHERE id = ?2",
+        "UPDATE vaults SET name = ?1, updated_at = datetime('now') WHERE id = ?2",
         params![new_name, id],
     )?;
     get_vault(conn, id).ok_or(rusqlite::Error::QueryReturnedNoRows)

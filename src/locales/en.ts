@@ -117,6 +117,19 @@ const en: Translations = {
   scanQr: "Scan QR code from clipboard",
   qrNotFound: "No QR code found in clipboard",
   qrScanFailed: "Scan failed. Make sure you have a QR code screenshot in clipboard.",
+  compactView: "Compact view",
+  detailView: "Detail view",
+  sortBy: "Sort by",
+  filter: "Filter",
+  noItems: "No items",
+  loadMore: "Load more",
+  remaining: "{count} remaining",
+  sortByDate: "By time modified",
+  sortByName: "By name",
+  sortByNameAZ: "Name A-Z",
+  sortByNameZA: "Name Z-A",
+  sortByDateNewest: "Newest first",
+  sortByDateOldest: "Oldest first",
 };
 
 export default en;

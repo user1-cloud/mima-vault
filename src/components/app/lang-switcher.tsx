@@ -27,10 +27,10 @@ export function LanguageSelector() {
 
   return (
     <div>
-      <div className="relative mb-1">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+      <div className="relative mb-3">
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         <Input
-          className="pl-8 h-8 text-sm"
+          className="pl-8 h-8 text-sm focus-visible:ring-offset-1"
           placeholder={t("searchLanguage")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}

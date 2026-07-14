@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigateWithTransition } from "@/lib/view-transition";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import {
@@ -10,9 +10,13 @@ import {
   EyeOff,
   Fingerprint,
   ArrowLeft,
+  ArrowUpAZ,
+  ArrowDownAZ,
+  Clock,
+  Trash2,
 } from "lucide-react";
 import mimaIcon from "@/assets/mima.svg";
-import { useApp } from "@/stores/app";
+import { useApp, type VaultInfo } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { IconButton } from "@/components/ui/icon-button";
@@ -23,30 +27,56 @@ import { DangerButton } from "@/components/ui/danger-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  DndContext,
-  DragOverlay,
-  rectIntersection,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-  type DragOverEvent,
-  type DragStartEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  arrayMove,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
+import { SortableCardList, type SortOption } from "./sortable-card-list";
+import { ListCardIcon, ListCardContent } from "./list-card";
 import { Modal, ModalBody, ModalContent } from "@/components/ui/animated-modal";
 import { CardSpotlight } from "@/components/ui/card-spotlight";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { AppSettingsTabs } from "./app-settings";
 import { WaveBackground } from "./wave-background";
 import { VaultCard } from "./vault-card";
+
+function avatarColor(name: string): string {
+  const colors = [
+    "bg-blue-500/20 text-blue-400",
+    "bg-emerald-500/20 text-emerald-400",
+    "bg-violet-500/20 text-violet-400",
+    "bg-amber-500/20 text-amber-400",
+    "bg-rose-500/20 text-rose-400",
+    "bg-cyan-500/20 text-cyan-400",
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return colors[Math.abs(hash) % colors.length];
+}
+
+const vaultSortOptions: SortOption[] = [
+  { key: "name-asc", icon: <ArrowUpAZ className="w-4 h-4" />, labelKey: "sortByNameAZ" },
+  { key: "name-desc", icon: <ArrowDownAZ className="w-4 h-4" />, labelKey: "sortByNameZA" },
+  { key: "created-desc", icon: <Clock className="w-4 h-4" />, labelKey: "sortByDateNewest" },
+  { key: "created-asc", icon: <Clock className="w-4 h-4" />, labelKey: "sortByDateOldest" },
+];
+
+function sortVaults(vaults: VaultInfo[], key: string) {
+  const sorted = [...vaults];
+  switch (key) {
+    case "name-asc":
+      sorted.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case "name-desc":
+      sorted.sort((a, b) => b.name.localeCompare(a.name));
+      break;
+    case "created-desc":
+      sorted.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      break;
+    case "created-asc":
+      sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      break;
+  }
+  return sorted;
+}
 
 const cardVariants: Variants = {
   hidden: { opacity: 0, y: 30, scale: 0.96 },
@@ -111,41 +141,12 @@ export function VaultList() {
   const [showAllVaults, setShowAllVaults] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(5);
+  const [vaultSortKey, setVaultSortKey] = useState("name-asc");
 
-  const [items, setItems] = useState(vaults);
-  const [dragActive, setDragActive] = useState(false);
-  const [activeDragVault, setActiveDragVault] = useState<typeof vaults[0] | null>(null);
-
-  useEffect(() => {
-    setItems(vaults);
-  }, [vaults]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  const sortedVaults = useMemo(
+    () => sortVaults(vaults, vaultSortKey),
+    [vaults, vaultSortKey]
   );
-
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    setDragActive(true);
-    const vault = vaults.find((v) => v.id === event.active.id);
-    if (vault) setActiveDragVault(vault);
-  }, [vaults]);
-
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    setItems((prev) => {
-      const oldIdx = prev.findIndex((v) => v.id === active.id);
-      const newIdx = prev.findIndex((v) => v.id === over.id);
-      if (oldIdx === -1 || newIdx === -1) return prev;
-      return arrayMove(prev, oldIdx, newIdx);
-    });
-  }, []);
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    setDragActive(false);
-    setActiveDragVault(null);
-  }, []);
 
   useEffect(() => {
     loadVaults().finally(() => setLoading(false));
@@ -601,42 +602,75 @@ export function VaultList() {
                 words={t("allVaults")}
                 className="text-lg font-semibold tracking-tight text-center [&_div]:text-lg"
               />
-              <DndContext
-                sensors={sensors}
-                collisionDetection={rectIntersection}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-              >
-                <SortableContext items={items.map((v) => v.id)} strategy={verticalListSortingStrategy}>
-                  {items.map((vault) => (
-                    <VaultCard
-                      key={vault.id}
-                      id={vault.id}
-                      sortable
-                      name={vault.name}
-                      createdAt={vault.created_at}
-                      onClick={() => {
-                        setUnlockingVaultId(vault.id);
-                        setUnlockPassword("");
-                        setUnlockError("");
-                      }}
-                      onDelete={() => setDeleteId(vault.id)}
-                    />
-                  ))}
-                </SortableContext>
-                <DragOverlay style={{ pointerEvents: "none" }}>
-                  {activeDragVault ? (
-                    <VaultCard
-                      id={activeDragVault.id}
-                      sortable
-                      name={activeDragVault.name}
-                      createdAt={activeDragVault.created_at}
-                      onClick={() => {}}
-                    />
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
+              <SortableCardList
+                className="max-h-[55vh]"
+                items={sortedVaults}
+                renderItem={(vault, mode) => {
+                  if (mode === "compact") {
+                    return (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUnlockingVaultId(vault.id);
+                            setUnlockPassword("");
+                            setUnlockError("");
+                          }}
+                          className="flex-1 flex items-center gap-2 px-3 py-2 text-left min-w-0"
+                        >
+                          <span className="text-sm font-medium truncate">{vault.name}</span>
+                          <span className="text-xs text-muted-foreground truncate">{vault.created_at}</span>
+                          <span className="flex-1" />
+                        </button>
+                        <div className="flex items-center pr-2">
+                          <Tooltip content={t("deleteVault")} side="bottom">
+                            <IconButton
+                              onClick={(e) => { e.stopPropagation(); setDeleteId(vault.id); }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </IconButton>
+                          </Tooltip>
+                        </div>
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUnlockingVaultId(vault.id);
+                          setUnlockPassword("");
+                          setUnlockError("");
+                        }}
+                        className="flex-1 flex items-center gap-3 p-3 pl-1 text-left min-w-0"
+                      >
+                        <ListCardIcon className={`rounded-full ${avatarColor(vault.name)}`}>
+                          <span className="text-sm font-semibold">
+                            {vault.name.charAt(0).toUpperCase()}
+                          </span>
+                        </ListCardIcon>
+                        <ListCardContent name={vault.name} subtitle={vault.created_at} />
+                      </button>
+                      <div className="flex items-center pr-2">
+                        <Tooltip content={t("deleteVault")} side="bottom">
+                          <IconButton
+                            onClick={(e) => { e.stopPropagation(); setDeleteId(vault.id); }}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </IconButton>
+                        </Tooltip>
+                      </div>
+                    </>
+                  );
+                }}
+                toolbar={{
+                  displayMode: true,
+                  sortOptions: vaultSortOptions,
+                  activeSort: vaultSortKey,
+                  onSortChange: setVaultSortKey,
+                }}
+              />
             <PrimaryButton
               className="w-full"
               onClick={() => {

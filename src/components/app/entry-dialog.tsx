@@ -15,7 +15,7 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  ModalProvider,
+  Modal,
   ModalBody,
   ModalContent,
   ModalFooter,
@@ -41,9 +41,9 @@ interface Props {
 
 export function EntryDialog({ open, onOpenChange, entry }: Props) {
   return (
-    <ModalProvider>
+    <Modal open={open} onOpenChange={onOpenChange}>
       <EntryDialogInner open={open} onOpenChange={onOpenChange} entry={entry} />
-    </ModalProvider>
+    </Modal>
   );
 }
 

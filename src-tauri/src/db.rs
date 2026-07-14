@@ -184,7 +184,7 @@ pub fn delete_entry(conn: &Connection, id: i64) -> Result<(), rusqlite::Error> {
 pub fn reorder_entries(conn: &Connection, orders: &[(i64, f64)]) -> Result<(), rusqlite::Error> {
     let tx = conn.unchecked_transaction()?;
     {
-        let mut stmt = tx.prepare("UPDATE entries SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2")?;
+        let mut stmt = tx.prepare("UPDATE entries SET sort_order = ?1 WHERE id = ?2")?;
         for (id, order) in orders {
             stmt.execute(params![order, id])?;
         }

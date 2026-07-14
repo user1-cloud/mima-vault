@@ -17,7 +17,7 @@ export function SortableCardItem({ id, children, className }: SortableCardItemPr
   const style = {
     transform: CSS.Transform.toString(transform),
     transition: isDragging ? undefined : transition,
-    opacity: isDragging ? 0 : 1,
+    opacity: isDragging ? 0.6 : 1,
     zIndex: isDragging ? 50 : undefined,
   };
 

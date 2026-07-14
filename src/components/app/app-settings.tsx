@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { Settings, Globe, Palette, Clock } from "lucide-react";
+import { Settings, Globe, Palette, Clock, Check } from "lucide-react";
 import { useLocale } from "@/stores/locale";
 import { useApp } from "@/stores/app";
 import { t } from "@/lib/i18n";
@@ -8,24 +8,41 @@ import { Modal, ModalBody, ModalContent } from "@/components/ui/animated-modal";
 import { Tooltip } from "@/components/ui/tooltip";
 import { LanguageSelector } from "./lang-switcher";
 
+const AUTO_LOCK_OPTIONS = [
+  { value: 0, labelKey: "autoLockNever" },
+  { value: 60, labelKey: "autoLock1m" },
+  { value: 300, labelKey: "autoLock5m" },
+  { value: 900, labelKey: "autoLock15m" },
+  { value: 1800, labelKey: "autoLock30m" },
+  { value: 3600, labelKey: "autoLock1h" },
+] as const;
+
 function AutoLockSettings() {
   const { autoLockTimeout, setAutoLockTimeout } = useApp();
 
   return (
     <div>
       <p className="text-xs text-muted-foreground mb-3">{t("autoLockDesc")}</p>
-      <select
-        className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-        value={autoLockTimeout}
-        onChange={(e) => setAutoLockTimeout(Number(e.target.value))}
-      >
-        <option value={0}>{t("autoLockNever")}</option>
-        <option value={60}>{t("autoLock1m")}</option>
-        <option value={300}>{t("autoLock5m")}</option>
-        <option value={900}>{t("autoLock15m")}</option>
-        <option value={1800}>{t("autoLock30m")}</option>
-        <option value={3600}>{t("autoLock1h")}</option>
-      </select>
+      <div className="space-y-1">
+        {AUTO_LOCK_OPTIONS.map((opt) => {
+          const isSelected = autoLockTimeout === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setAutoLockTimeout(opt.value)}
+              className={
+                "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors"
+                + (isSelected
+                  ? " bg-surface-overlay text-white"
+                  : " text-muted-foreground hover:bg-surface-overlay hover:text-white")
+              }
+            >
+              <span className="flex-1 text-left">{t(opt.labelKey)}</span>
+              {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -34,6 +51,7 @@ interface SettingsTab {
   id: string;
   icon: ReactNode;
   labelKey: string;
+  subtitleKey?: string;
   content: ReactNode;
 }
 
@@ -87,16 +105,21 @@ export function AppSettingsModal({
   return (
     <Modal open={open} onOpenChange={onOpenChange}>
       <ModalBody className="!h-[420px]">
-        <ModalContent className="overflow-hidden">
-          <h2 className="text-lg font-semibold mb-4 shrink-0">{t("appSettings")}</h2>
+        <ModalContent className="grid grid-rows-[auto_1fr_auto] overflow-hidden !pb-4">
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold">{t(currentTab.labelKey)}</h2>
+            {currentTab.subtitleKey && (
+              <p className="text-sm text-muted-foreground mt-1">{t(currentTab.subtitleKey)}</p>
+            )}
+          </div>
 
           {/* Content area */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="min-h-0 overflow-y-auto p-1">
             {currentTab?.content}
           </div>
 
           {/* Tab bar */}
-          <div className="flex items-center gap-1.5 pt-3 mt-3 border-t border-border overflow-x-auto scrollbar-none shrink-0">
+          <div className="flex items-center gap-1.5 pt-1.5 border-t border-border overflow-x-auto scrollbar-none">
             {tabs.map((tab) => (
               <Tooltip key={tab.id} content={t(tab.labelKey)} side="top">
                 <IconButton

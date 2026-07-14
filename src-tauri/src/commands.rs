@@ -112,6 +112,9 @@ pub fn open_vault(
         let mut id_guard = db.vault_id.lock().map_err(|e| e.to_string())?;
         *id_guard = Some(vault_id);
 
+        let meta_conn = meta.conn.lock().map_err(|e| e.to_string())?;
+        meta_db::touch_vault(&meta_conn, vault_id).map_err(|e| e.to_string())?;
+
         Ok(true)
     } else {
         db.close_vault();

@@ -29,10 +29,41 @@ interface VaultCardProps {
   onClick: () => void;
   onDelete?: () => void;
   sortable?: boolean;
+  compact?: boolean;
 }
 
-function VaultCardInner({ name, createdAt, onClick, onDelete }: Omit<VaultCardProps, "id" | "sortable">) {
+export function VaultCardInner({ name, createdAt, onClick, onDelete, compact }: Omit<VaultCardProps, "id" | "sortable">) {
   useLocale();
+
+  if (compact) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={onClick}
+          className="flex-1 flex items-center gap-2 px-3 py-2 text-left min-w-0"
+        >
+          <span className="text-sm font-medium truncate">{name}</span>
+          <span className="text-xs text-muted-foreground truncate">{createdAt}</span>
+          <span className="flex-1" />
+        </button>
+        {onDelete && (
+          <div className="flex items-center pr-2">
+            <Tooltip content={t("deleteVault")} side="bottom">
+              <IconButton
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </IconButton>
+            </Tooltip>
+          </div>
+        )}
+      </>
+    );
+  }
 
   return (
     <>
