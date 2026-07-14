@@ -172,6 +172,20 @@ export function Vault() {
     }
   }, [isLocked, activeVault]);
 
+  useEffect(() => {
+    function preventSideButton(e: MouseEvent) {
+      if (e.button === 3 || e.button === 4) {
+        e.preventDefault();
+      }
+    }
+    document.addEventListener("mouseup", preventSideButton);
+    document.addEventListener("mousedown", preventSideButton);
+    return () => {
+      document.removeEventListener("mouseup", preventSideButton);
+      document.removeEventListener("mousedown", preventSideButton);
+    };
+  }, []);
+
   const debouncedSearch = useDebounce(searchQuery, 200);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
