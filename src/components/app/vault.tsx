@@ -25,6 +25,7 @@ import {
   ArrowDownAZ,
   Clock,
   Tag,
+  GripVertical,
 } from "lucide-react";
 
 import { useApp, type Entry } from "@/stores/app";
@@ -86,6 +87,7 @@ const entrySortOptions: SortOption[] = [
   { key: "name-desc", icon: <ArrowDownAZ className="w-4 h-4" />, labelKey: "sortByNameZA" },
   { key: "created-desc", icon: <Clock className="w-4 h-4" />, labelKey: "sortByDateNewest" },
   { key: "created-asc", icon: <Clock className="w-4 h-4" />, labelKey: "sortByDateOldest" },
+  { key: "custom", icon: <GripVertical className="w-4 h-4" />, labelKey: "sortByCustom" },
 ];
 
 function sortEntries(entries: Entry[], key: string): Entry[] {
@@ -102,6 +104,8 @@ function sortEntries(entries: Entry[], key: string): Entry[] {
       break;
     case "created-asc":
       sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      break;
+    case "custom":
       break;
   }
   return sorted;
@@ -261,6 +265,7 @@ export function Vault() {
   const handleReorder = useCallback(
     (orderedIds: number[]) => {
       const orders: [number, number][] = orderedIds.map((id, i) => [id, i * 1000]);
+      setEntrySortKey("custom");
       reorderEntries(orders);
     },
     [reorderEntries]

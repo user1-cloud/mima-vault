@@ -150,8 +150,6 @@ export function SortableCardList<T extends { id: number }>({
 
   const displayItemsRef = useRef(displayItems);
   displayItemsRef.current = displayItems;
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -172,8 +170,8 @@ export function SortableCardList<T extends { id: number }>({
 
       setDragItems((prev) => {
         if (!prev) return null;
-        const oldIndex = prev.findIndex((i) => String(i.id) === String(active.id));
-        const newIndex = prev.findIndex((i) => String(i.id) === String(over.id));
+        const oldIndex = prev.findIndex((i) => i.id === active.id);
+        const newIndex = prev.findIndex((i) => i.id === over.id);
         if (oldIndex === -1 || newIndex === -1) return prev;
         return arrayMove(prev, oldIndex, newIndex);
       });
@@ -181,24 +179,24 @@ export function SortableCardList<T extends { id: number }>({
     [],
   );
 
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
+  const dragItemsRef = useRef(dragItems);
+  dragItemsRef.current = dragItems;
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+
+  const handleDragEnd = useCallback(() => {
     setDragActive(false);
-    const { active, over } = event;
-
-    if (!over || active.id === over.id || !onReorder || hasFilters) {
-      setTimeout(() => setActiveDragItem(null), 300);
-      return;
+    const currentDragItems = dragItemsRef.current;
+    const currentItems = itemsRef.current;
+    if (currentDragItems && onReorder && !hasFilters) {
+      const dragIds = currentDragItems.map((i) => i.id);
+      const fullIds = currentItems.map((i) => i.id);
+      const reorderedIds = [
+        ...dragIds,
+        ...fullIds.filter((id) => !dragIds.includes(id)),
+      ];
+      onReorder(reorderedIds);
     }
-
-    const current = itemsRef.current;
-    const oldIndex = current.findIndex((i) => String(i.id) === String(active.id));
-    const newIndex = current.findIndex((i) => String(i.id) === String(over.id));
-
-    if (oldIndex !== -1 && newIndex !== -1) {
-      const reordered = arrayMove(current, oldIndex, newIndex);
-      onReorder(reordered.map((i) => i.id));
-    }
-
     setTimeout(() => setActiveDragItem(null), 300);
   }, [onReorder, hasFilters]);
 
