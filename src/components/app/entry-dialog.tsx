@@ -30,6 +30,7 @@ const formSchema = z.object({
   url: z.string().optional().or(z.literal("")),
   notes: z.string().optional().or(z.literal("")),
   totp: z.string().optional().or(z.literal("")),
+  tags: z.string().optional().or(z.literal("")),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -91,9 +92,10 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
           url: entry.url ?? "",
           notes: entry.notes ?? "",
           totp: entry.totp ?? "",
+          tags: entry.tags ?? "",
         });
       } else {
-        reset({ name: "", username: "", password: "", url: "", notes: "", totp: "" });
+        reset({ name: "", username: "", password: "", url: "", notes: "", totp: "", tags: "" });
       }
       setShowPassword(false);
     }
@@ -151,6 +153,7 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
           url: data.url || null,
           notes: data.notes || null,
           totp: data.totp || null,
+          tags: data.tags || null,
         };
         if (entry) {
           await updateEntry(entry.id, payload);
@@ -337,6 +340,16 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
                 </IconButton>
               </Tooltip>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="tags">{t("tags")} ({t("optional")})</Label>
+            <Input
+              id="tags"
+              {...register("tags")}
+              placeholder={t("tagsPlaceholder")}
+              className="transition-shadow duration-300 focus:shadow-[0_0_15px_-3px_oklch(0.65_0.2_250/0.3)]"
+            />
           </div>
 
           <div className="flex gap-3 justify-end pt-2">

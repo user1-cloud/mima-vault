@@ -16,6 +16,7 @@ export interface Entry {
   url: string | null;
   notes: string | null;
   totp: string | null;
+  tags: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -37,6 +38,7 @@ export interface ExportEntry {
   url: string | null;
   notes: string | null;
   totp: string | null;
+  tags: string | null;
 }
 
 export interface TotpCode {

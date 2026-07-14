@@ -150,6 +150,8 @@ export function SortableCardList<T extends { id: number }>({
 
   const displayItemsRef = useRef(displayItems);
   displayItemsRef.current = displayItems;
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
@@ -170,8 +172,8 @@ export function SortableCardList<T extends { id: number }>({
 
       setDragItems((prev) => {
         if (!prev) return null;
-        const oldIndex = prev.findIndex((i) => i.id === active.id);
-        const newIndex = prev.findIndex((i) => i.id === over.id);
+        const oldIndex = prev.findIndex((i) => String(i.id) === String(active.id));
+        const newIndex = prev.findIndex((i) => String(i.id) === String(over.id));
         if (oldIndex === -1 || newIndex === -1) return prev;
         return arrayMove(prev, oldIndex, newIndex);
       });
@@ -179,24 +181,24 @@ export function SortableCardList<T extends { id: number }>({
     [],
   );
 
-  const dragItemsRef = useRef(dragItems);
-  dragItemsRef.current = dragItems;
-  const itemsRef = useRef(items);
-  itemsRef.current = items;
-
-  const handleDragEnd = useCallback(() => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     setDragActive(false);
-    const currentDragItems = dragItemsRef.current;
-    const currentItems = itemsRef.current;
-    if (currentDragItems && onReorder && !hasFilters) {
-      const dragIds = currentDragItems.map((i) => i.id);
-      const fullIds = currentItems.map((i) => i.id);
-      const reorderedIds = [
-        ...dragIds,
-        ...fullIds.filter((id) => !dragIds.includes(id)),
-      ];
-      onReorder(reorderedIds);
+    const { active, over } = event;
+
+    if (!over || active.id === over.id || !onReorder || hasFilters) {
+      setTimeout(() => setActiveDragItem(null), 300);
+      return;
     }
+
+    const current = itemsRef.current;
+    const oldIndex = current.findIndex((i) => String(i.id) === String(active.id));
+    const newIndex = current.findIndex((i) => String(i.id) === String(over.id));
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const reordered = arrayMove(current, oldIndex, newIndex);
+      onReorder(reordered.map((i) => i.id));
+    }
+
     setTimeout(() => setActiveDragItem(null), 300);
   }, [onReorder, hasFilters]);
 
@@ -284,7 +286,7 @@ export function SortableCardList<T extends { id: number }>({
             transition={{ duration: 0.2 }}
             className="overflow-hidden shrink-0"
           >
-            <div className="flex flex-wrap gap-1.5 pb-2">
+            <div className="flex flex-wrap gap-1.5 pb-2 px-2">
               {filterCategories.map((cat) => {
                 const isActive = toolbar.activeFilters?.includes(cat.key);
                 return (
@@ -300,7 +302,7 @@ export function SortableCardList<T extends { id: number }>({
                     className={
                       "rounded-full px-2.5 py-1 text-xs transition-colors"
                       + (isActive
-                        ? " bg-primary/20 text-primary border border-primary/30"
+                        ? " bg-blue-600 text-white"
                         : " bg-surface-elevated text-muted-foreground border border-border hover:border-primary/30 hover:text-white")
                     }
                   >
@@ -368,7 +370,7 @@ export function SortableCardList<T extends { id: number }>({
 
           <DragOverlay dropAnimation={dropAnimation}>
             {activeDragItem ? (
-              <div className="pr-2 pl-2 py-0.5 opacity-60">
+              <div className="px-2 py-0.5 opacity-60">
                 <ListCard className="shadow-lg">
                   <div className="flex items-center justify-center w-9 shrink-0 text-muted-foreground">
                     <GripVertical className="w-5 h-5" />

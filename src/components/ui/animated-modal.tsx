@@ -11,6 +11,8 @@ import React, {
 } from "react";
 import { createPortal } from "react-dom";
 import { CloseButton } from "./close-button";
+import { Tooltip } from "./tooltip";
+import { t } from "@/lib/i18n";
 
 interface ModalContextType {
   open: boolean;
@@ -220,10 +222,11 @@ const Overlay = ({ className }: { className?: string }) => {
 const CloseIcon = () => {
   const { setOpen } = useModal();
   return (
-    <CloseButton
-      onClick={() => setOpen(false)}
-      className="absolute top-3 right-3 z-50"
-    />
+    <div className="absolute top-3 right-3 z-50">
+      <Tooltip content={t("close")} side="bottom">
+        <CloseButton onClick={() => setOpen(false)} />
+      </Tooltip>
+    </div>
   );
 };
 

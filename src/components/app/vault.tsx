@@ -24,6 +24,7 @@ import {
   ArrowUpAZ,
   ArrowDownAZ,
   Clock,
+  Tag,
 } from "lucide-react";
 
 import { useApp, type Entry } from "@/stores/app";
@@ -107,12 +108,14 @@ function sortEntries(entries: Entry[], key: string): Entry[] {
 }
 
 function entryFilterCategories(entries: Entry[]) {
-  const letters = new Map<string, number>();
+  const tagCounts = new Map<string, number>();
   for (const e of entries) {
-    const letter = e.name.charAt(0).toUpperCase();
-    letters.set(letter, (letters.get(letter) ?? 0) + 1);
+    if (!e.tags) continue;
+    for (const tag of e.tags.split(",").map((t) => t.trim()).filter(Boolean)) {
+      tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+    }
   }
-  return Array.from(letters.entries())
+  return Array.from(tagCounts.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, count]) => ({ key, labelKey: key, count }));
 }
@@ -496,6 +499,25 @@ export function Vault() {
                       </IconButton>
                     </Tooltip>
                   </div>
+
+                  {/* Tags */}
+                  {selected.tags && (() => {
+                    const tagList = selected.tags.split(",").map((t) => t.trim()).filter(Boolean);
+                    if (tagList.length === 0) return null;
+                    return (
+                      <div className="flex flex-wrap gap-1.5">
+                        {tagList.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-2.5 py-1 text-xs text-white"
+                          >
+                            <Tag className="w-3 h-3" />
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   {/* Fields */}
                   <div className="space-y-3">
