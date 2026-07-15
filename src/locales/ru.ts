@@ -76,6 +76,8 @@ const ru: Partial<Translations> = {
   deleteVaultCountdown: "Подтвердить удаление ({n}с)",
   back: "Назад",
   export: "Экспортировать",
+  exportPlaintext: "Экспорт JSON в открытом виде",
+  exportEncrypted: "Экспорт зашифрованной резервной копии",
   import: "Импортировать",
   importTitle: "Импортировать записи",
   selectFile: "Выберите файл",

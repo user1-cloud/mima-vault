@@ -74,6 +74,8 @@ const zh = {
   deleteVaultCountdown: "确认删除（{n} 秒）",
   back: "返回",
   export: "导出",
+  exportPlaintext: "导出明文JSON",
+  exportEncrypted: "导出加密备份",
   import: "导入",
   importTitle: "导入密码条目",
   selectFile: "选择文件",

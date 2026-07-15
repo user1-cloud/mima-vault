@@ -76,6 +76,8 @@ const en: Translations = {
   deleteVaultCountdown: "Confirm ({n} s)",
   back: "Back",
   export: "Export",
+  exportPlaintext: "Export Plaintext",
+  exportEncrypted: "Export Encrypted",
   import: "Import",
   importTitle: "Import Entries",
   selectFile: "Select File",

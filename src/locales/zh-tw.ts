@@ -76,6 +76,8 @@ const zhTw: Partial<Translations> = {
   deleteVaultCountdown: "確認刪除（{n} 秒）",
   back: "返回",
   export: "匯出",
+  exportPlaintext: "匯出明文JSON",
+  exportEncrypted: "匯出加密備份",
   import: "匯入",
   importTitle: "匯入密碼項目",
   selectFile: "選擇檔案",

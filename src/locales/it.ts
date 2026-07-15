@@ -76,6 +76,8 @@ const it: Partial<Translations> = {
   deleteVaultCountdown: "Conferma eliminazione ({n} s)",
   back: "Indietro",
   export: "Esporta",
+  exportPlaintext: "Esporta JSON in testo chiaro",
+  exportEncrypted: "Esporta backup crittografato",
   import: "Importa",
   importTitle: "Importa voci",
   selectFile: "Scegli file",

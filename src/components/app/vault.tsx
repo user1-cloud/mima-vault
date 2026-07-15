@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   Download,
   Upload,
+  Lock,
   Timer,
   ArrowUpAZ,
   ArrowDownAZ,
@@ -40,6 +41,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { HighlightIconButton } from "@/components/ui/highlight-icon-button";
 import { DangerIconButton } from "@/components/ui/danger-icon-button";
 import { StatefulButton } from "@/components/ui/stateful-button";
+import { PrimaryButton } from "@/components/ui/primary-button";
 import { SecondaryButton } from "@/components/ui/secondary-button";
 import { DangerButton } from "@/components/ui/danger-button";
 import { useAutoLock } from "./use-auto-lock";
@@ -55,6 +57,7 @@ import { SortableCardList, type SortOption } from "./sortable-card-list";
 
 import { useBackLayer } from "@/lib/history-back";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { EntryDialog } from "./entry-dialog";
 import { VaultSettingsDialog } from "./vault-settings-dialog";
 import { AppSettingsButton } from "./app-settings";
@@ -204,6 +207,17 @@ export function Vault() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [entrySortKey, setEntrySortKey] = useState("name-asc");
   const [entryFilters, setEntryFilters] = useState<string[]>([]);
+
+  const [exportFormatOpen, setExportFormatOpen] = useState(false);
+  const [exportPwOpen, setExportPwOpen] = useState(false);
+  const [exportPendingPath, setExportPendingPath] = useState<string | null>(null);
+  const [exportPw, setExportPw] = useState("");
+  const [exportPwError, setExportPwError] = useState("");
+
+  const [importPwOpen, setImportPwOpen] = useState(false);
+  const [importPendingPath, setImportPendingPath] = useState<string | null>(null);
+  const [importPw, setImportPw] = useState("");
+  const [importPwError, setImportPwError] = useState("");
 
   const sortedEntries = useMemo(
     () => sortEntries(entries, entrySortKey),
@@ -406,19 +420,7 @@ export function Vault() {
               </HighlightIconButton>
             </Tooltip>
             <Tooltip content={t("export")} side="bottom">
-              <IconButton
-                onClick={async () => {
-                  const p = await save({
-                    defaultPath: `${activeVault?.name ?? "mima"}-export.json`,
-                    filters: [{ name: t("jsonFile"), extensions: ["json"] }],
-                  });
-                  if (p) {
-                    try {
-                      await useApp.getState().exportPlaintext(p);
-                    } catch (_) {}
-                  }
-                }}
-              >
+              <IconButton onClick={() => setExportFormatOpen(true)}>
                 <Download className="w-4 h-4" />
               </IconButton>
             </Tooltip>
@@ -431,14 +433,18 @@ export function Vault() {
                       { name: t("backupFile"), extensions: ["mima-backup"] },
                     ],
                   });
-                  if (p) {
-                    try {
-                      const preview = await useApp.getState().previewImport(p as string);
-                      if (preview.entries.length > 0) {
-                        await useApp.getState().confirmImport(p as string);
-                        await useApp.getState().loadEntries();
-                      }
-                    } catch (_) {}
+                  if (!p) return;
+                  try {
+                    const preview = await useApp.getState().previewImport(p as string);
+                    if (preview.entries.length > 0) {
+                      await useApp.getState().confirmImport(p as string);
+                      await useApp.getState().loadEntries();
+                    }
+                  } catch {
+                    setImportPendingPath(p as string);
+                    setImportPw("");
+                    setImportPwError("");
+                    setImportPwOpen(true);
                   }
                 }}
               >
@@ -658,6 +664,172 @@ export function Vault() {
               >
                 {t("deleteEntry")}
               </DangerButton>
+            </div>
+          </ModalContent>
+        </ModalBody>
+      </Modal>
+
+      <Modal open={exportFormatOpen} onOpenChange={() => setExportFormatOpen(false)}>
+        <ModalBody>
+          <ModalContent>
+            <h2 className="text-lg font-semibold mb-4">{t("export")}</h2>
+            <div className="space-y-2">
+              <button
+                onClick={async () => {
+                  setExportFormatOpen(false);
+                  const p = await save({
+                    defaultPath: `${activeVault?.name ?? "mima"}-export.json`,
+                    filters: [{ name: t("jsonFile"), extensions: ["json"] }],
+                  });
+                  if (p) {
+                    try { await useApp.getState().exportPlaintext(p); } catch (_) {}
+                  }
+                }}
+                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-muted-foreground hover:bg-surface-overlay hover:text-white transition-colors border border-border"
+              >
+                <FileText className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-medium text-white">{t("exportPlaintext")}</div>
+                  <div className="text-xs text-muted-foreground">{t("jsonFile")}</div>
+                </div>
+              </button>
+              <button
+                onClick={async () => {
+                  setExportFormatOpen(false);
+                  const p = await save({
+                    defaultPath: `${activeVault?.name ?? "mima"}-backup.mima-backup`,
+                    filters: [{ name: t("backupFile"), extensions: ["mima-backup"] }],
+                  });
+                  if (p) {
+                    setExportPendingPath(p);
+                    setExportPw("");
+                    setExportPwError("");
+                    setExportPwOpen(true);
+                  }
+                }}
+                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-muted-foreground hover:bg-surface-overlay hover:text-white transition-colors border border-border"
+              >
+                <Lock className="w-5 h-5" />
+                <div className="text-left">
+                  <div className="font-medium text-white">{t("exportEncrypted")}</div>
+                  <div className="text-xs text-muted-foreground">{t("backupFile")}</div>
+                </div>
+              </button>
+            </div>
+            <div className="flex justify-end mt-4">
+              <SecondaryButton onClick={() => setExportFormatOpen(false)}>
+                {t("cancel")}
+              </SecondaryButton>
+            </div>
+          </ModalContent>
+        </ModalBody>
+      </Modal>
+
+      <Modal open={exportPwOpen} onOpenChange={() => setExportPwOpen(false)}>
+        <ModalBody>
+          <ModalContent>
+            <h2 className="text-lg font-semibold mb-4">{t("encryptedExportTitle")}</h2>
+            {exportPwError && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-danger/10 border border-danger/30 text-danger rounded-lg px-3 py-2 text-sm mb-4"
+              >
+                {exportPwError}
+              </motion.div>
+            )}
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="export-password">{t("backupPassword")}</Label>
+              <Input
+                id="export-password"
+                type="password"
+                value={exportPw}
+                onChange={(e) => setExportPw(e.target.value)}
+                placeholder={t("enterBackupPassword")}
+                autoComplete="new-password"
+                className="font-mono"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <SecondaryButton onClick={() => setExportPwOpen(false)}>
+                {t("cancel")}
+              </SecondaryButton>
+              <PrimaryButton
+                disabled={!exportPw}
+                onClick={async () => {
+                  if (!exportPendingPath) return;
+                  try {
+                    await useApp.getState().exportEncryptedBackup(exportPendingPath, exportPw);
+                    setExportPwOpen(false);
+                  } catch (e) {
+                    setExportPwError(String(e));
+                  }
+                }}
+              >
+                {t("export")}
+              </PrimaryButton>
+            </div>
+          </ModalContent>
+        </ModalBody>
+      </Modal>
+
+      <Modal open={importPwOpen} onOpenChange={() => setImportPwOpen(false)}>
+        <ModalBody>
+          <ModalContent>
+            <h2 className="text-lg font-semibold mb-4">{t("importTitle")}</h2>
+            {importPwError && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-danger/10 border border-danger/30 text-danger rounded-lg px-3 py-2 text-sm mb-4"
+              >
+                {importPwError}
+              </motion.div>
+            )}
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="import-password">{t("backupPassword")}</Label>
+              <Input
+                id="import-password"
+                type="password"
+                value={importPw}
+                onChange={(e) => setImportPw(e.target.value)}
+                placeholder={t("enterBackupPassword")}
+                autoComplete="new-password"
+                className="font-mono"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <SecondaryButton onClick={() => setImportPwOpen(false)}>
+                {t("cancel")}
+              </SecondaryButton>
+              <PrimaryButton
+                disabled={!importPw}
+                onClick={async () => {
+                  if (!importPendingPath) return;
+                  try {
+                    const preview = await useApp.getState().previewEncryptedImport(
+                      importPendingPath,
+                      importPw,
+                    );
+                    if (preview.entries.length > 0) {
+                      await useApp.getState().confirmEncryptedImport(importPendingPath, importPw);
+                      await useApp.getState().loadEntries();
+                      setImportPwOpen(false);
+                    }
+                  } catch (e) {
+                    const msg = String(e);
+                    setImportPwError(
+                      msg.toLowerCase().includes("password") || msg.toLowerCase().includes("decrypt")
+                        ? t("wrongBackupPassword")
+                        : msg,
+                    );
+                  }
+                }}
+              >
+                {t("confirmImport")}
+              </PrimaryButton>
             </div>
           </ModalContent>
         </ModalBody>

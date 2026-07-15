@@ -76,6 +76,8 @@ const ja: Partial<Translations> = {
   deleteVaultCountdown: "削除確認（{n} 秒）",
   back: "戻る",
   export: "エクスポート",
+  exportPlaintext: "平文JSONをエクスポート",
+  exportEncrypted: "暗号化バックアップをエクスポート",
   import: "インポート",
   importTitle: "パスワード項目をインポート",
   selectFile: "ファイルを選択",

@@ -76,6 +76,8 @@ const ko: Partial<Translations> = {
   deleteVaultCountdown: "삭제 확인({n}초)",
   back: "돌아가기",
   export: "내보내기",
+  exportPlaintext: "평문 JSON 내보내기",
+  exportEncrypted: "암호화된 백업 내보내기",
   import: "가져오기",
   importTitle: "비밀번호 항목 가져오기",
   selectFile: "파일 선택하기",

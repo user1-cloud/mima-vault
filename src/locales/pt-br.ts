@@ -76,6 +76,8 @@ const ptBr: Partial<Translations> = {
   deleteVaultCountdown: "Confirmar exclusão ({n} s)",
   back: "Voltar",
   export: "Exportar",
+  exportPlaintext: "Exportar JSON em texto plano",
+  exportEncrypted: "Exportar backup criptografado",
   import: "Importar",
   importTitle: "Importar entradas",
   selectFile: "Selecione o arquivo",
