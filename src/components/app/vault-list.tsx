@@ -14,6 +14,7 @@ import {
   ArrowUpAZ,
   ArrowDownAZ,
   Clock,
+  History,
   Trash2,
   GripVertical,
 } from "lucide-react";
@@ -57,6 +58,7 @@ function avatarColor(name: string): string {
 }
 
 const vaultSortOptions: SortOption[] = [
+  { key: "recent", icon: <History className="w-4 h-4" />, labelKey: "sortByRecent" },
   { key: "name-asc", icon: <ArrowUpAZ className="w-4 h-4" />, labelKey: "sortByNameAZ" },
   { key: "name-desc", icon: <ArrowDownAZ className="w-4 h-4" />, labelKey: "sortByNameZA" },
   { key: "created-desc", icon: <Clock className="w-4 h-4" />, labelKey: "sortByDateNewest" },
@@ -67,6 +69,16 @@ const vaultSortOptions: SortOption[] = [
 function sortVaults(vaults: VaultInfo[], key: string) {
   const sorted = [...vaults];
   switch (key) {
+    case "recent":
+      sorted.sort((a, b) => {
+        if (a.last_opened_at && b.last_opened_at) {
+          return b.last_opened_at.localeCompare(a.last_opened_at);
+        }
+        if (a.last_opened_at) return -1;
+        if (b.last_opened_at) return 1;
+        return b.created_at.localeCompare(a.created_at);
+      });
+      break;
     case "name-asc":
       sorted.sort((a, b) => a.name.localeCompare(b.name));
       break;
@@ -147,12 +159,24 @@ export function VaultList() {
   const [showAllVaults, setShowAllVaults] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(5);
-  const [vaultSortKey, setVaultSortKey] = useState("name-asc");
+  const [vaultSortKey, setVaultSortKey] = useState("recent");
 
   const sortedVaults = useMemo(
     () => sortVaults(vaults, vaultSortKey),
     [vaults, vaultSortKey]
   );
+
+  const recentVault = useMemo(() => {
+    if (vaults.length === 0) return null;
+    return [...vaults].sort((a, b) => {
+      if (a.last_opened_at && b.last_opened_at) {
+        return b.last_opened_at.localeCompare(a.last_opened_at);
+      }
+      if (a.last_opened_at) return -1;
+      if (b.last_opened_at) return 1;
+      return b.created_at.localeCompare(a.created_at);
+    })[0];
+  }, [vaults]);
 
   useEffect(() => {
     loadVaults().finally(() => setLoading(false));
@@ -687,15 +711,17 @@ export function VaultList() {
                 words={t("recentVault")}
                 className="text-lg font-semibold tracking-tight text-center [&_div]:text-lg"
               />
-              <VaultCard
-                name={vaults[0].name}
-                createdAt={vaults[0].created_at}
-                onClick={() => {
-                  setUnlockingVaultId(vaults[0].id);
-                  setUnlockPassword("");
-                  setUnlockError("");
-                }}
-              />
+              {recentVault && (
+                <VaultCard
+                  name={recentVault.name}
+                  createdAt={recentVault.created_at}
+                  onClick={() => {
+                    setUnlockingVaultId(recentVault.id);
+                    setUnlockPassword("");
+                    setUnlockError("");
+                  }}
+                />
+              )}
               <PrimaryButton
                 className="mx-auto"
                 onClick={() => setShowAllVaults(true)}

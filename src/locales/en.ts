@@ -132,6 +132,7 @@ const en: Translations = {
   sortByNameZA: "Name Z-A",
   sortByDateNewest: "Newest first",
   sortByDateOldest: "Oldest first",
+  sortByRecent: "Recently opened",
   sortByCustom: "Custom order",
   tags: "Tags",
   tagsPlaceholder: "Separate tags with commas, e.g. work, email",

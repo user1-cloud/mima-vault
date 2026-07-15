@@ -55,7 +55,6 @@ import { EncryptedText } from "@/components/ui/encrypted-text";
 import { ListCardIcon, ListCardContent } from "./list-card";
 import { SortableCardList, type SortOption } from "./sortable-card-list";
 
-import { useBackLayer } from "@/lib/history-back";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EntryDialog } from "./entry-dialog";
@@ -155,7 +154,24 @@ const fieldCardVariants: Variants = {
 };
 
 function DetailBackLayer({ onDeselect, children }: { onDeselect: () => void; children: React.ReactNode }) {
-  useBackLayer(true, onDeselect);
+  const onBackRef = useRef(onDeselect);
+  onBackRef.current = onDeselect;
+
+  useEffect(() => {
+    const url = window.location.href;
+    window.history.pushState({ ...window.history.state }, "", url);
+
+    function onPopState(e: PopStateEvent) {
+      e.stopImmediatePropagation();
+      onBackRef.current();
+    }
+
+    window.addEventListener("popstate", onPopState, { capture: true });
+    return () => {
+      window.removeEventListener("popstate", onPopState, { capture: true });
+    };
+  }, []);
+
   return <>{children}</>;
 }
 
@@ -255,6 +271,18 @@ export function Vault() {
     },
     [copyToClipboard]
   );
+
+  const closeExportPw = useCallback(() => {
+    setExportPwOpen(false);
+    setExportPw("");
+    setExportPwError("");
+  }, []);
+
+  const closeImportPw = useCallback(() => {
+    setImportPwOpen(false);
+    setImportPw("");
+    setImportPwError("");
+  }, []);
 
   const handleEdit = useCallback((entry: Entry) => {
     setEditingEntry(entry);
@@ -725,7 +753,7 @@ export function Vault() {
         </ModalBody>
       </Modal>
 
-      <Modal open={exportPwOpen} onOpenChange={() => setExportPwOpen(false)}>
+      <Modal open={exportPwOpen} onOpenChange={closeExportPw}>
         <ModalBody>
           <ModalContent>
             <h2 className="text-lg font-semibold mb-4">{t("encryptedExportTitle")}</h2>
@@ -752,7 +780,7 @@ export function Vault() {
               />
             </div>
             <div className="flex gap-3 justify-end">
-              <SecondaryButton onClick={() => setExportPwOpen(false)}>
+              <SecondaryButton onClick={closeExportPw}>
                 {t("cancel")}
               </SecondaryButton>
               <PrimaryButton
@@ -761,7 +789,7 @@ export function Vault() {
                   if (!exportPendingPath) return;
                   try {
                     await useApp.getState().exportEncryptedBackup(exportPendingPath, exportPw);
-                    setExportPwOpen(false);
+                    closeExportPw();
                   } catch (e) {
                     setExportPwError(String(e));
                   }
@@ -774,7 +802,7 @@ export function Vault() {
         </ModalBody>
       </Modal>
 
-      <Modal open={importPwOpen} onOpenChange={() => setImportPwOpen(false)}>
+      <Modal open={importPwOpen} onOpenChange={closeImportPw}>
         <ModalBody>
           <ModalContent>
             <h2 className="text-lg font-semibold mb-4">{t("importTitle")}</h2>
@@ -801,7 +829,7 @@ export function Vault() {
               />
             </div>
             <div className="flex gap-3 justify-end">
-              <SecondaryButton onClick={() => setImportPwOpen(false)}>
+              <SecondaryButton onClick={closeImportPw}>
                 {t("cancel")}
               </SecondaryButton>
               <PrimaryButton
@@ -816,7 +844,7 @@ export function Vault() {
                     if (preview.entries.length > 0) {
                       await useApp.getState().confirmEncryptedImport(importPendingPath, importPw);
                       await useApp.getState().loadEntries();
-                      setImportPwOpen(false);
+                      closeImportPw();
                     }
                   } catch (e) {
                     const msg = String(e);

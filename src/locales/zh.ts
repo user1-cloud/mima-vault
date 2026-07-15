@@ -130,6 +130,7 @@ const zh = {
   sortByNameZA: "名称 Z-A",
   sortByDateNewest: "最近优先",
   sortByDateOldest: "最早优先",
+  sortByRecent: "最近打开",
   sortByCustom: "手动排序",
   tags: "标签",
   tagsPlaceholder: "用逗号分隔标签，例如 work, email",

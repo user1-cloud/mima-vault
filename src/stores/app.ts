@@ -139,6 +139,7 @@ export const useApp = create<AppState>((set, get) => ({
       const vault = get().vaults.find((v) => v.id === vaultId) ?? null;
       set({ activeVault: vault, isLocked: false });
       await get().loadEntries();
+      await get().loadVaults();
       return true;
     }
     return false;

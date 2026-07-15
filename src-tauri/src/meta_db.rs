@@ -71,7 +71,7 @@ pub fn insert_vault(
 
 pub fn list_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, path, created_at, updated_at, last_opened_at, sort_order FROM vaults ORDER BY sort_order ASC, created_at DESC",
+        "SELECT id, name, path, created_at, updated_at, last_opened_at, sort_order FROM vaults ORDER BY sort_order ASC, last_opened_at DESC, created_at DESC",
     )?;
     let rows = stmt.query_map([], |row| {
         Ok(VaultInfo {

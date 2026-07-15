@@ -467,7 +467,13 @@ pub fn reorder_entries(
 #[tauri::command]
 pub fn copy_to_clipboard(app: tauri::AppHandle, text: String) -> Result<(), String> {
     use tauri_plugin_clipboard_manager::ClipboardExt;
-    app.clipboard().write_text(text).map_err(|e| e.to_string())
+    app.clipboard().write_text(text).map_err(|e| e.to_string())?;
+    let handle = app.clone();
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_secs(60));
+        let _ = handle.clipboard().clear();
+    });
+    Ok(())
 }
 
 #[tauri::command]
