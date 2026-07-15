@@ -346,7 +346,6 @@ export function SortableCardList<T extends { id: number }>({
                 filteredVisible.map((item) => (
                   <motion.div
                     key={item.id}
-                    layout={!dragActive}
                     variants={cardVariants}
                     initial="hidden"
                     animate="visible"
@@ -357,7 +356,7 @@ export function SortableCardList<T extends { id: number }>({
                       damping: 30,
                     }}
                   >
-                    <SortableCardItem id={item.id}>
+                    <SortableCardItem id={item.id} hideHandle={hasFilters}>
                       {renderItem(item, displayMode)}
                     </SortableCardItem>
                   </motion.div>

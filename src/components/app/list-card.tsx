@@ -9,9 +9,8 @@ export function ListCard({ children, className }: ListCardProps) {
   return (
     <motion.div
       whileHover={{ scale: 1.015 }}
-      whileTap={{ scale: 0.985 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      className={`rounded-xl flex items-stretch overflow-hidden bg-surface-elevated hover:bg-surface-overlay ${className ?? ""}`}
+      className={`rounded-xl flex items-stretch overflow-hidden bg-surface-elevated hover:bg-surface-overlay active:scale-[0.985] transition-transform duration-100 ${className ?? ""}`}
     >
       {children}
     </motion.div>
