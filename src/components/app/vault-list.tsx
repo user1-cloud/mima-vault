@@ -15,6 +15,7 @@ import {
   ArrowDownAZ,
   Clock,
   Trash2,
+  GripVertical,
 } from "lucide-react";
 import { WindowControls } from "@/components/app/window-controls";
 import mimaIcon from "@/assets/mima.svg";
@@ -60,6 +61,7 @@ const vaultSortOptions: SortOption[] = [
   { key: "name-desc", icon: <ArrowDownAZ className="w-4 h-4" />, labelKey: "sortByNameZA" },
   { key: "created-desc", icon: <Clock className="w-4 h-4" />, labelKey: "sortByDateNewest" },
   { key: "created-asc", icon: <Clock className="w-4 h-4" />, labelKey: "sortByDateOldest" },
+  { key: "custom", icon: <GripVertical className="w-4 h-4" />, labelKey: "sortByCustom" },
 ];
 
 function sortVaults(vaults: VaultInfo[], key: string) {
@@ -76,6 +78,8 @@ function sortVaults(vaults: VaultInfo[], key: string) {
       break;
     case "created-asc":
       sorted.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      break;
+    case "custom":
       break;
   }
   return sorted;
@@ -122,7 +126,7 @@ function ViewWrapper({ children }: { children: React.ReactNode }) {
 }
 
 export function VaultList() {
-  const { vaults, loadVaults, createVault, deleteVault, openVault, checkBiometricEnabled, biometricUnlock } = useApp();
+  const { vaults, loadVaults, createVault, deleteVault, openVault, checkBiometricEnabled, biometricUnlock, reorderVaults } = useApp();
 
   useLocale();
 
@@ -206,6 +210,15 @@ export function VaultList() {
       setCreating(false);
     }
   }, [vaultName, password, confirm, createVault]);
+
+  const handleReorder = useCallback(
+    (orderedIds: number[]) => {
+      const orders: [number, number][] = orderedIds.map((id, i) => [id, i * 1000]);
+      setVaultSortKey("custom");
+      reorderVaults(orders);
+    },
+    [reorderVaults]
+  );
 
   const handleDelete = useCallback(
     async (id: number) => {
@@ -564,6 +577,7 @@ export function VaultList() {
               <SortableCardList
                 className="max-h-[55vh]"
                 items={sortedVaults}
+                onReorder={handleReorder}
                 renderItem={(vault, mode) => {
                   if (mode === "compact") {
                     return (

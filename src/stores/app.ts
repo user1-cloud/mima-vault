@@ -29,6 +29,7 @@ export interface VaultInfo {
   created_at: string;
   updated_at: string;
   last_opened_at?: string;
+  sort_order: number;
 }
 
 export interface ExportEntry {
@@ -77,6 +78,7 @@ interface AppState {
   ) => Promise<void>;
   deleteEntry: (id: number) => Promise<void>;
   reorderEntries: (orders: [number, number][]) => Promise<void>;
+  reorderVaults: (orders: [number, number][]) => Promise<void>;
   generatePassword: (length?: number) => Promise<string>;
   generateTotpCode: (entryId: number) => Promise<TotpCode>;
   copyToClipboard: (text: string) => Promise<void>;
@@ -205,6 +207,11 @@ export const useApp = create<AppState>((set, get) => ({
   reorderEntries: async (orders) => {
     await invoke("reorder_entries", { orders });
     await get().loadEntries();
+  },
+
+  reorderVaults: async (orders) => {
+    await invoke("reorder_vaults", { orders });
+    await get().loadVaults();
   },
 
   generatePassword: async (length) => {

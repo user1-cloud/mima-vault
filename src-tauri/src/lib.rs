@@ -45,6 +45,7 @@ pub fn run() {
             commands::close_vault,
             commands::rename_vault,
             commands::delete_vault,
+            commands::reorder_vaults,
             commands::list_entries,
             commands::get_entry,
             commands::create_entry,

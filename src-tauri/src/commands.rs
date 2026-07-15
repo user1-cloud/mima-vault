@@ -205,6 +205,15 @@ pub fn delete_vault(
     Ok(())
 }
 
+#[tauri::command]
+pub fn reorder_vaults(
+    meta: State<'_, MetaDb>,
+    orders: Vec<(i64, f64)>,
+) -> Result<(), String> {
+    let conn = meta.conn.lock().map_err(|e| e.to_string())?;
+    meta_db::reorder_vaults(&conn, &orders).map_err(|e| e.to_string())
+}
+
 // ─── Entry commands ───
 
 #[derive(Serialize, Deserialize, Clone)]

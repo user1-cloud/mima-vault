@@ -25,6 +25,7 @@ pub struct VaultInfo {
     pub created_at: String,
     pub updated_at: String,
     pub last_opened_at: Option<String>,
+    pub sort_order: f64,
 }
 
 pub fn init_meta(conn: &Connection) -> Result<(), rusqlite::Error> {
@@ -49,6 +50,10 @@ pub fn init_meta(conn: &Connection) -> Result<(), rusqlite::Error> {
         "UPDATE vaults SET updated_at = created_at WHERE updated_at IS NULL",
         [],
     );
+    let _ = conn.execute(
+        "ALTER TABLE vaults ADD COLUMN sort_order REAL NOT NULL DEFAULT 0",
+        [],
+    );
     Ok(())
 }
 
@@ -66,7 +71,7 @@ pub fn insert_vault(
 
 pub fn list_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, path, created_at, updated_at, last_opened_at FROM vaults ORDER BY last_opened_at DESC, created_at DESC",
+        "SELECT id, name, path, created_at, updated_at, last_opened_at, sort_order FROM vaults ORDER BY sort_order ASC, created_at DESC",
     )?;
     let rows = stmt.query_map([], |row| {
         Ok(VaultInfo {
@@ -76,6 +81,7 @@ pub fn list_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error>
             created_at: row.get(3)?,
             updated_at: row.get(4)?,
             last_opened_at: row.get(5)?,
+            sort_order: row.get(6)?,
         })
     })?;
     rows.collect()
@@ -83,7 +89,7 @@ pub fn list_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error>
 
 pub fn get_vault(conn: &Connection, id: i64) -> Option<VaultInfo> {
     conn.query_row(
-        "SELECT id, name, path, created_at, updated_at, last_opened_at FROM vaults WHERE id = ?1",
+        "SELECT id, name, path, created_at, updated_at, last_opened_at, sort_order FROM vaults WHERE id = ?1",
         params![id],
         |row| {
             Ok(VaultInfo {
@@ -93,6 +99,7 @@ pub fn get_vault(conn: &Connection, id: i64) -> Option<VaultInfo> {
                 created_at: row.get(3)?,
                 updated_at: row.get(4)?,
                 last_opened_at: row.get(5)?,
+                sort_order: row.get(6)?,
             })
         },
     )
@@ -122,4 +129,15 @@ pub fn rename_vault(
 pub fn delete_vault(conn: &Connection, id: i64) -> Result<(), rusqlite::Error> {
     conn.execute("DELETE FROM vaults WHERE id = ?1", params![id])?;
     Ok(())
+}
+
+pub fn reorder_vaults(conn: &Connection, orders: &[(i64, f64)]) -> Result<(), rusqlite::Error> {
+    let tx = conn.unchecked_transaction()?;
+    {
+        let mut stmt = tx.prepare("UPDATE vaults SET sort_order = ?1 WHERE id = ?2")?;
+        for (id, order) in orders {
+            stmt.execute(params![order, id])?;
+        }
+    }
+    tx.commit()
 }
