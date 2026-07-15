@@ -7,11 +7,11 @@ const variantStyles = {
   default:
     "bg-primary text-primary-foreground hover:ring-primary",
   secondary:
-    "bg-border border border-muted text-white hover:ring-white/10 hover:bg-muted",
+    "bg-border border border-muted text-foreground hover:ring-white/10 hover:bg-muted",
   destructive:
     "bg-danger text-danger-foreground hover:ring-danger",
   ghost:
-    "hover:bg-surface-elevated hover:text-white hover:ring-primary",
+    "hover:bg-surface-elevated hover:text-foreground hover:ring-primary",
   link: "text-primary underline-offset-4 hover:underline hover:ring-0 hover:ring-offset-0",
 } as const;
 

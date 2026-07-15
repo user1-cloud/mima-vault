@@ -298,7 +298,7 @@ export function SortableCardList<T extends { id: number }>({
                       "rounded-full px-2.5 py-1 text-xs transition-colors"
                       + (isActive
                         ? " bg-blue-600 text-white"
-                        : " bg-surface-elevated text-muted-foreground border border-border hover:border-primary/30 hover:text-white")
+                        : " bg-surface-elevated text-muted-foreground border border-border hover:border-primary/30 hover:text-foreground")
                     }
                   >
                     {t(cat.labelKey)}
@@ -383,7 +383,7 @@ export function SortableCardList<T extends { id: number }>({
           <div className="flex justify-center py-3">
             <button
               onClick={handleLoadMore}
-              className="text-xs text-muted-foreground hover:text-white transition-colors px-3 py-1.5 rounded-md hover:bg-surface-overlay"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-md hover:bg-surface-overlay"
             >
               {t("loadMore")} ({t("remaining", { count: String(remaining) })})
             </button>

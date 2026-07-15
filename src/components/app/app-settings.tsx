@@ -2,6 +2,8 @@ import { useState, useEffect, type ReactNode } from "react";
 import { Settings, Globe, Palette, Clock, Check } from "lucide-react";
 import { useLocale } from "@/stores/locale";
 import { useApp } from "@/stores/app";
+import { getStoredTheme, setStoredTheme, type Theme } from "@/stores/theme";
+import { getStoredAccent, setStoredAccent, ACCENT_PRESETS } from "@/stores/theme-color";
 import { t } from "@/lib/i18n";
 import { IconButton } from "@/components/ui/icon-button";
 import { Modal, ModalBody, ModalContent } from "@/components/ui/animated-modal";
@@ -33,8 +35,8 @@ function AutoLockSettings() {
               className={
                 "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors"
                 + (isSelected
-                  ? " bg-surface-overlay text-white"
-                  : " text-muted-foreground hover:bg-surface-overlay hover:text-white")
+                  ? " bg-surface-overlay text-foreground"
+                  : " text-muted-foreground hover:bg-surface-overlay hover:text-foreground")
               }
             >
               <span className="flex-1 text-left">{t(opt.labelKey)}</span>
@@ -55,6 +57,88 @@ interface SettingsTab {
   content: ReactNode;
 }
 
+const THEME_OPTIONS: { value: Theme; labelKey: string }[] = [
+  { value: "system", labelKey: "themeSystem" },
+  { value: "dark", labelKey: "themeDark" },
+  { value: "light", labelKey: "themeLight" },
+];
+
+function ThemeSelector() {
+  const [theme, setTheme] = useState<Theme>(getStoredTheme);
+
+  useEffect(() => {
+    const onSystemChange = () => {
+      if (getStoredTheme() === "system") setTheme("system");
+    };
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    mq.addEventListener("change", onSystemChange);
+    return () => mq.removeEventListener("change", onSystemChange);
+  }, []);
+
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground mb-3">{t("appearance")}</p>
+      <div className="space-y-1">
+        {THEME_OPTIONS.map((opt) => {
+          const isSelected = theme === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => { setStoredTheme(opt.value); setTheme(opt.value); }}
+              className={
+                "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors"
+                + (isSelected
+                  ? " bg-surface-overlay text-foreground"
+                  : " text-muted-foreground hover:bg-surface-overlay hover:text-foreground")
+              }
+            >
+              <span className="flex-1 text-left">{t(opt.labelKey)}</span>
+              {isSelected && <Check className="w-4 h-4 text-primary shrink-0" />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AccentColorPicker() {
+  const [accent, setAccent] = useState(getStoredAccent);
+
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground mb-3">{t("accentColor")}</p>
+      <div className="flex items-center gap-2.5">
+        {ACCENT_PRESETS.map((preset) => {
+          const isSelected = accent === preset.id;
+          return (
+            <button
+              key={preset.id}
+              onClick={() => { setStoredAccent(preset.id); setAccent(preset.id); }}
+              className="relative flex items-center justify-center w-8 h-8 rounded-full transition-transform hover:scale-110"
+              style={{ backgroundColor: `oklch(${preset.dark})` }}
+              title={t(preset.labelKey)}
+            >
+              {isSelected && (
+                <Check className="w-4 h-4 text-white drop-shadow-sm" strokeWidth={2.5} />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AppearanceSettings() {
+  return (
+    <div className="space-y-6">
+      <ThemeSelector />
+      <AccentColorPicker />
+    </div>
+  );
+}
+
 function useSettingsTabs(): SettingsTab[] {
   return [
     {
@@ -67,11 +151,7 @@ function useSettingsTabs(): SettingsTab[] {
       id: "appearance",
       icon: <Palette className="w-4 h-4" />,
       labelKey: "appearance",
-      content: (
-        <p className="text-sm text-muted-foreground py-8 text-center">
-          {t("comingSoon")}
-        </p>
-      ),
+      content: <AppearanceSettings />,
     },
     {
       id: "autoLock",

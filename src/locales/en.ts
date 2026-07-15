@@ -137,6 +137,18 @@ const en: Translations = {
   tags: "Tags",
   tagsPlaceholder: "Separate tags with commas, e.g. work, email",
   close: "Close",
+  theme: "Theme",
+  themeDark: "Dark",
+  themeLight: "Light",
+  themeSystem: "System",
+  accentColor: "Accent color",
+  colorBlue: "Blue",
+  colorPurple: "Purple",
+  colorGreen: "Green",
+  colorRed: "Red",
+  colorOrange: "Orange",
+  colorPink: "Pink",
+  colorTeal: "Teal",
 };
 
 export default en;

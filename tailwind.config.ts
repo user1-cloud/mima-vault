@@ -8,27 +8,28 @@ export default {
     extend: {
       colors: {
         surface: {
-          DEFAULT: "oklch(0.23 0.01 250)",
-          elevated: "oklch(0.27 0.01 250)",
-          overlay: "oklch(0.31 0.01 250)",
+          DEFAULT: "oklch(var(--color-surface) / <alpha-value>)",
+          elevated: "oklch(var(--color-surface-elevated) / <alpha-value>)",
+          overlay: "oklch(var(--color-surface-overlay) / <alpha-value>)",
         },
-        border: "oklch(0.35 0.01 250)",
+        border: "oklch(var(--color-border) / <alpha-value>)",
         primary: {
-          DEFAULT: "oklch(0.55 0.22 250)",
-          foreground: "#fff",
+          DEFAULT: "oklch(var(--color-primary) / <alpha-value>)",
+          foreground: "oklch(var(--color-primary-foreground) / <alpha-value>)",
         },
         muted: {
-          DEFAULT: "oklch(0.38 0.01 250)",
-          foreground: "oklch(0.60 0.01 250)",
+          DEFAULT: "oklch(var(--color-muted) / <alpha-value>)",
+          foreground: "oklch(var(--color-muted-foreground) / <alpha-value>)",
         },
         accent: {
-          DEFAULT: "oklch(0.35 0.01 250)",
-          foreground: "oklch(0.95 0.01 250)",
+          DEFAULT: "oklch(var(--color-accent) / <alpha-value>)",
+          foreground: "oklch(var(--color-accent-foreground) / <alpha-value>)",
         },
         danger: {
-          DEFAULT: "oklch(0.52 0.20 15)",
-          foreground: "#fff",
+          DEFAULT: "oklch(var(--color-danger) / <alpha-value>)",
+          foreground: "oklch(var(--color-danger-foreground) / <alpha-value>)",
         },
+        foreground: "oklch(var(--color-foreground) / <alpha-value>)",
       },
       borderRadius: {
         lg: "0.75rem",

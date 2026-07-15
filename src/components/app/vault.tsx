@@ -49,6 +49,7 @@ import { useAutoLock } from "./use-auto-lock";
 import { Tooltip } from "@/components/ui/tooltip";
 import { CardTitle } from "@/components/ui/card-hover-effect";
 import { CardSpotlight } from "@/components/ui/card-spotlight";
+
 import { Modal, ModalBody, ModalContent } from "@/components/ui/animated-modal";
 import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { EncryptedText } from "@/components/ui/encrypted-text";
@@ -713,11 +714,11 @@ export function Vault() {
                     try { await useApp.getState().exportPlaintext(p); } catch (_) {}
                   }
                 }}
-                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-muted-foreground hover:bg-surface-overlay hover:text-white transition-colors border border-border"
+                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-muted-foreground hover:bg-surface-overlay hover:text-foreground transition-colors border border-border"
               >
                 <FileText className="w-5 h-5" />
                 <div className="text-left">
-                  <div className="font-medium text-white">{t("exportPlaintext")}</div>
+                  <div className="font-medium text-foreground">{t("exportPlaintext")}</div>
                   <div className="text-xs text-muted-foreground">{t("jsonFile")}</div>
                 </div>
               </button>
@@ -735,11 +736,11 @@ export function Vault() {
                     setExportPwOpen(true);
                   }
                 }}
-                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-muted-foreground hover:bg-surface-overlay hover:text-white transition-colors border border-border"
+                className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm text-muted-foreground hover:bg-surface-overlay hover:text-foreground transition-colors border border-border"
               >
                 <Lock className="w-5 h-5" />
                 <div className="text-left">
-                  <div className="font-medium text-white">{t("exportEncrypted")}</div>
+                  <div className="font-medium text-foreground">{t("exportEncrypted")}</div>
                   <div className="text-xs text-muted-foreground">{t("backupFile")}</div>
                 </div>
               </button>
@@ -898,7 +899,7 @@ function FieldCard({
       className="group"
       data-tauri-drag-region="false"
     >
-      <CardSpotlight className="p-4 rounded-2xl bg-surface border-white/[0.2]" radius={250}>
+      <CardSpotlight className="p-4 rounded-2xl bg-surface border-foreground/[0.1]" radius={250}>
         <div className="space-y-2">
           <CardTitle>
             <div className="flex items-center gap-2 -mt-3">
@@ -910,7 +911,7 @@ function FieldCard({
           </CardTitle>
           <div className="flex items-center gap-2">
             <span
-              className={`flex-1 text-sm text-white/90 select-text min-w-0 ${
+              className={`flex-1 text-sm text-foreground/90 select-text min-w-0 ${
                 isSecret && !revealed
                   ? "font-mono tracking-[0.3em]"
                   : multiline
@@ -1028,7 +1029,7 @@ function TotpDisplay({ entryId, index }: { entryId: number; index: number }) {
       animate="visible"
       className="group"
     >
-      <CardSpotlight className="p-4 rounded-2xl bg-surface border-white/[0.2]" radius={250}>
+      <CardSpotlight className="p-4 rounded-2xl bg-surface border-foreground/[0.1]" radius={250}>
         <div className="space-y-2">
           <CardTitle>
             <div className="flex items-center gap-2 -mt-3">
@@ -1051,7 +1052,7 @@ function TotpDisplay({ entryId, index }: { entryId: number; index: number }) {
               </span>
             ) : (
               <>
-                <span className="text-2xl font-mono tracking-[0.15em] text-white/90 select-text">
+                <span className="text-2xl font-mono tracking-[0.15em] text-foreground/90 select-text">
                   {totp.code}
                 </span>
                 <div className="flex items-center gap-1.5 ml-auto">
@@ -1063,7 +1064,7 @@ function TotpDisplay({ entryId, index }: { entryId: number; index: number }) {
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
-                      className="text-white/10"
+                      className="text-foreground/10"
                     />
                     <circle
                       cx="14"

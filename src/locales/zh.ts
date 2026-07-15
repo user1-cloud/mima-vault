@@ -135,6 +135,18 @@ const zh = {
   tags: "标签",
   tagsPlaceholder: "用逗号分隔标签，例如 work, email",
   close: "关闭",
+  theme: "主题",
+  themeDark: "深色",
+  themeLight: "浅色",
+  themeSystem: "跟随系统",
+  accentColor: "主题色",
+  colorBlue: "蓝色",
+  colorPurple: "紫色",
+  colorGreen: "绿色",
+  colorRed: "红色",
+  colorOrange: "橙色",
+  colorPink: "粉色",
+  colorTeal: "青色",
 };
 
 export type Translations = typeof zh;

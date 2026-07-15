@@ -70,8 +70,8 @@ export function DropdownMenuItem({ onClick, active, children }: DropdownMenuItem
       className={
         "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors"
         + (active
-          ? " bg-surface-overlay text-white"
-          : " text-muted-foreground hover:bg-surface-overlay hover:text-white")
+          ? " bg-surface-overlay text-foreground"
+          : " text-muted-foreground hover:bg-surface-overlay hover:text-foreground")
       }
     >
       {children}

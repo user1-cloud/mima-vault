@@ -53,8 +53,8 @@ export function LanguageSelector() {
                   className={
                     "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors"
                     + (isSelected
-                      ? " bg-surface-overlay text-white"
-                      : " text-muted-foreground hover:bg-surface-overlay hover:text-white")
+                      ? " bg-surface-overlay text-foreground"
+                      : " text-muted-foreground hover:bg-surface-overlay hover:text-foreground")
                   }
                 >
                   <span className="flex-1 text-left">{l.nativeName}</span>

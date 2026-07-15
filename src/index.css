@@ -3,6 +3,38 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-surface: 0.97 0.005 250;
+    --color-surface-elevated: 1 0 0;
+    --color-surface-overlay: 0.93 0.005 250;
+    --color-border: 0.85 0.005 250;
+    --color-primary: 0.45 0.20 250;
+    --color-primary-foreground: 1 0 0;
+    --color-muted: 0.90 0.005 250;
+    --color-muted-foreground: 0.48 0.01 250;
+    --color-accent: 0.90 0.005 250;
+    --color-accent-foreground: 0.15 0.01 250;
+    --color-danger: 0.52 0.20 15;
+    --color-danger-foreground: 1 0 0;
+    --color-foreground: 0.15 0.01 250;
+  }
+
+  .dark {
+    --color-surface: 0.23 0.01 250;
+    --color-surface-elevated: 0.27 0.01 250;
+    --color-surface-overlay: 0.31 0.01 250;
+    --color-border: 0.35 0.01 250;
+    --color-primary: 0.55 0.22 250;
+    --color-primary-foreground: 1 0 0;
+    --color-muted: 0.38 0.01 250;
+    --color-muted-foreground: 0.60 0.01 250;
+    --color-accent: 0.35 0.01 250;
+    --color-accent-foreground: 0.95 0.01 250;
+    --color-danger: 0.52 0.20 15;
+    --color-danger-foreground: 1 0 0;
+    --color-foreground: 1 0 0;
+  }
+
   * {
     margin: 0;
     padding: 0;
@@ -16,7 +48,8 @@
   }
 
   body {
-    @apply bg-surface text-white;
+    @apply bg-surface;
+    color: oklch(var(--color-foreground));
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);

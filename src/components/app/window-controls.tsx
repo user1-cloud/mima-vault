@@ -62,19 +62,19 @@ export function WindowControls() {
     <div className="flex h-8">
       <button
         onClick={minimize}
-        className={`${btnBase} text-white/60 hover:bg-white/10 hover:text-white`}
+        className={`${btnBase} text-foreground/60 hover:bg-foreground/10 hover:text-foreground`}
       >
         <MinimizeIcon />
       </button>
       <button
         onClick={toggleMaximize}
-        className={`${btnBase} text-white/60 hover:bg-white/10 hover:text-white`}
+        className={`${btnBase} text-foreground/60 hover:bg-foreground/10 hover:text-foreground`}
       >
         {maximized ? <RestoreIcon /> : <MaximizeIcon />}
       </button>
       <button
         onClick={close}
-        className={`${btnBase} text-white/60 hover:bg-[#c42b1c] hover:text-white`}
+        className={`${btnBase} text-foreground/60 hover:bg-[#c42b1c] hover:text-white`}
       >
         <CloseIcon />
       </button>
