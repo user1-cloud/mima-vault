@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -uo pipefail
+set -euo pipefail
 
 # ============================================================
 # Mima 一键构建脚本
@@ -27,10 +27,8 @@ build_with_target() {
     local target="$1"
     shift
     if has_target "$target"; then
-        pnpm tauri build "$@" --target "$target" || {
-            echo "ERROR: Build failed for $target — skipping"
-            return 1
-        }
+        echo "Building target $target..."
+        pnpm tauri build "$@" --target "$target"
     else
         echo "SKIP: Rust target $target not installed. Run: rustup target add $target"
         return 1
@@ -52,33 +50,37 @@ build_windows() {
     echo "--- Windows x64 ---"
     local bundle_dir="$PROJECT_DIR/src-tauri/target/x86_64-pc-windows-msvc/release/bundle"
     rm -rf "$bundle_dir"
-    if build_with_target x86_64-pc-windows-msvc --bundles msi,nsis; then
-        if [ -d "$bundle_dir/msi" ]; then
-            cp "$bundle_dir/msi"/*.msi "$RELEASE_DIR/"
-            echo "  -> msi copied"
-        fi
-        if [ -d "$bundle_dir/nsis" ]; then
-            cp "$bundle_dir/nsis"/*.exe "$RELEASE_DIR/"
-            echo "  -> nsis exe copied"
-        fi
-        echo "Windows x64 OK"
+    if ! build_with_target x86_64-pc-windows-msvc --bundles msi,nsis; then
+        echo "  -> Windows x64 target not available, skipping"
+        return
     fi
+    if [ -d "$bundle_dir/msi" ]; then
+        cp "$bundle_dir/msi"/*.msi "$RELEASE_DIR/"
+        echo "  -> msi copied"
+    fi
+    if [ -d "$bundle_dir/nsis" ]; then
+        cp "$bundle_dir/nsis"/*.exe "$RELEASE_DIR/"
+        echo "  -> nsis exe copied"
+    fi
+    echo "Windows x64 OK"
 
     # ARM64 (Snapdragon X 等设备)
     echo "--- Windows ARM64 ---"
     local arm64_dir="$PROJECT_DIR/src-tauri/target/aarch64-pc-windows-msvc/release/bundle"
     rm -rf "$arm64_dir"
-    if build_with_target aarch64-pc-windows-msvc --bundles msi,nsis; then
-        if [ -d "$arm64_dir/msi" ]; then
-            cp "$arm64_dir/msi"/*.msi "$RELEASE_DIR/"
-            echo "  -> arm64 msi copied"
-        fi
-        if [ -d "$arm64_dir/nsis" ]; then
-            cp "$arm64_dir/nsis"/*.exe "$RELEASE_DIR/"
-            echo "  -> arm64 nsis exe copied"
-        fi
-        echo "Windows ARM64 OK"
+    if ! build_with_target aarch64-pc-windows-msvc --bundles msi,nsis; then
+        echo "  -> Windows ARM64 target not available, skipping"
+        return
     fi
+    if [ -d "$arm64_dir/msi" ]; then
+        cp "$arm64_dir/msi"/*.msi "$RELEASE_DIR/"
+        echo "  -> arm64 msi copied"
+    fi
+    if [ -d "$arm64_dir/nsis" ]; then
+        cp "$arm64_dir/nsis"/*.exe "$RELEASE_DIR/"
+        echo "  -> arm64 nsis exe copied"
+    fi
+    echo "Windows ARM64 OK"
 }
 
 # ============================================================
@@ -96,33 +98,37 @@ build_linux() {
     echo "--- Linux x64 ---"
     local bundle_dir="$PROJECT_DIR/src-tauri/target/x86_64-unknown-linux-gnu/release/bundle"
     rm -rf "$bundle_dir"
-    if build_with_target x86_64-unknown-linux-gnu --bundles deb,appimage; then
-        if [ -d "$bundle_dir/deb" ]; then
-            cp "$bundle_dir/deb"/*.deb "$RELEASE_DIR/"
-            echo "  -> deb copied"
-        fi
-        if [ -d "$bundle_dir/appimage" ]; then
-            cp "$bundle_dir/appimage"/*.AppImage "$RELEASE_DIR/"
-            echo "  -> AppImage copied"
-        fi
-        echo "Linux x64 OK"
+    if ! build_with_target x86_64-unknown-linux-gnu --bundles deb,appimage; then
+        echo "  -> Linux x64 target not available, skipping"
+        return
     fi
+    if [ -d "$bundle_dir/deb" ]; then
+        cp "$bundle_dir/deb"/*.deb "$RELEASE_DIR/"
+        echo "  -> deb copied"
+    fi
+    if [ -d "$bundle_dir/appimage" ]; then
+        cp "$bundle_dir/appimage"/*.AppImage "$RELEASE_DIR/"
+        echo "  -> AppImage copied"
+    fi
+    echo "Linux x64 OK"
 
     # ARM64
     echo "--- Linux ARM64 ---"
     local arm64_dir="$PROJECT_DIR/src-tauri/target/aarch64-unknown-linux-gnu/release/bundle"
     rm -rf "$arm64_dir"
-    if build_with_target aarch64-unknown-linux-gnu --bundles deb,appimage; then
-        if [ -d "$arm64_dir/deb" ]; then
-            cp "$arm64_dir/deb"/*.deb "$RELEASE_DIR/"
-            echo "  -> arm64 deb copied"
-        fi
-        if [ -d "$arm64_dir/appimage" ]; then
-            cp "$arm64_dir/appimage"/*.AppImage "$RELEASE_DIR/"
-            echo "  -> arm64 AppImage copied"
-        fi
-        echo "Linux ARM64 OK"
+    if ! build_with_target aarch64-unknown-linux-gnu --bundles deb,appimage; then
+        echo "  -> Linux ARM64 target not available, skipping"
+        return
     fi
+    if [ -d "$arm64_dir/deb" ]; then
+        cp "$arm64_dir/deb"/*.deb "$RELEASE_DIR/"
+        echo "  -> arm64 deb copied"
+    fi
+    if [ -d "$arm64_dir/appimage" ]; then
+        cp "$arm64_dir/appimage"/*.AppImage "$RELEASE_DIR/"
+        echo "  -> arm64 AppImage copied"
+    fi
+    echo "Linux ARM64 OK"
 }
 
 # ============================================================
@@ -143,7 +149,7 @@ build_android() {
     sed -i "s/tauri\.android\.versionCode=.*/tauri.android.versionCode=$VERSION_CODE/" "$ANDROID_DIR/app/tauri.properties"
     echo "  version synced: $APP_VERSION (code $VERSION_CODE)"
 
-    # Universal (所有架构合一)
+    # Universal (所有架构合一) — 失败则退出
     echo "--- Android universal ---"
     cd "$PROJECT_DIR" && pnpm tauri android build
     local universal_dir="$ANDROID_DIR/app/build/outputs/apk/universal/release"
@@ -151,28 +157,43 @@ build_android() {
         cp "$universal_dir"/*.apk "$RELEASE_DIR/"
         echo "  -> universal APK copied"
     else
-        echo "  WARNING: universal APK not found, continuing with per-arch builds"
+        echo "  ERROR: universal APK not found at $universal_dir"
+        exit 1
     fi
 
     # 逐个架构 (跳过 rustBuild 因为 .so 已在上一步编译好了)
     local flavors=("arm64" "arm" "x86" "x86_64")
+    local android_failures=()
     for arch in "${flavors[@]}"; do
         echo "--- Android $arch ---"
-        (
+        if (
             cd "$ANDROID_DIR"
             ./gradlew "assemble${arch^}Release" "-xrustBuild${arch^}Release"
-        ) || {
-            echo "  WARNING: Android $arch build failed, skipping"
-            continue
-        }
-        local src_dir="$ANDROID_DIR/app/build/outputs/apk/$arch/release"
-        if ls "$src_dir"/*.apk >/dev/null 2>&1; then
-            cp "$src_dir"/*.apk "$RELEASE_DIR/"
-            echo "  -> $arch APK copied"
+        ); then
+            local src_dir="$ANDROID_DIR/app/build/outputs/apk/$arch/release"
+            if ls "$src_dir"/*.apk >/dev/null 2>&1; then
+                cp "$src_dir"/*.apk "$RELEASE_DIR/"
+                echo "  -> $arch APK copied"
+            else
+                echo "  ERROR: APK not found in $src_dir"
+                android_failures+=("$arch (APK missing)")
+            fi
         else
-            echo "  WARNING: APK not found in $src_dir"
+            echo "  ERROR: Android $arch build failed"
+            android_failures+=("$arch (build failed)")
         fi
     done
+
+    if [ ${#android_failures[@]} -gt 0 ]; then
+        echo ""
+        echo "  ========================================"
+        echo "  WARNING: Some Android arch builds FAILED:"
+        for f in "${android_failures[@]}"; do
+            echo "    - $f"
+        done
+        echo "  Universal APK is still available."
+        echo "  ========================================"
+    fi
 
     echo "Android APKs -> release/"
 }
