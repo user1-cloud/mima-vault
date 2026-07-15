@@ -13,24 +13,6 @@
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
     "shell:allow-open",
-    "dialog:default",
-    "biometry:default",
-    "idlemonitor:default",
-    {
-      "identifier": "biometry:allow-set-data",
-      "allow": [{ "domain": "mima" }]
-    },
-    {
-      "identifier": "biometry:allow-get-data",
-      "allow": [{ "domain": "mima" }]
-    },
-    {
-      "identifier": "biometry:allow-has-data",
-      "allow": [{ "domain": "mima" }]
-    },
-    {
-      "identifier": "biometry:allow-remove-data",
-      "allow": [{ "domain": "mima" }]
-    }
+    "dialog:default"
   ]
 }

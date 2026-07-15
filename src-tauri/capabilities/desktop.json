@@ -1,0 +1,26 @@
+{
+  "identifier": "desktop-plugins",
+  "description": "Desktop-only capabilities (biometric + idle monitor)",
+  "windows": ["main"],
+  "platforms": ["linux", "macOS", "windows"],
+  "permissions": [
+    "biometry:default",
+    "idlemonitor:default",
+    {
+      "identifier": "biometry:allow-set-data",
+      "allow": [{ "domain": "mima" }]
+    },
+    {
+      "identifier": "biometry:allow-get-data",
+      "allow": [{ "domain": "mima" }]
+    },
+    {
+      "identifier": "biometry:allow-has-data",
+      "allow": [{ "domain": "mima" }]
+    },
+    {
+      "identifier": "biometry:allow-remove-data",
+      "allow": [{ "domain": "mima" }]
+    }
+  ]
+}
