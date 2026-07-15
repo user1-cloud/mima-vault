@@ -130,7 +130,20 @@ sortByNameAZ,名称 A-Z,Name A-Z,名稱 A-Z,名稱 A-Z,名前 A-Z,이름 A-Z,Nam
 sortByNameZA,名称 Z-A,Name Z-A,名稱 Z-A,名稱 Z-A,名前 Z-A,이름 Z-A,Name Z-A,Nombre Z-A,Nom Z-A,Имя Z-A,Nome Z-A,Nome Z-A
 sortByDateNewest,最近优先,Newest first,最近優先,最近優先,新しい順,최신순,Neueste zuerst,Más reciente primero,Plus récent en premier,Сначала новые,Mais recente primeiro,Prima i più recenti
 sortByDateOldest,最早优先,Oldest first,最早優先,最早優先,古い順,오래된순,Älteste zuerst,Más antiguo primero,Plus ancien en premier,Сначала старые,Mais antigo primeiro,Prima i più vecchi
+sortByRecent,最近打开,Recently opened,最近開啟,最近開啟,最近開いた,최근 열은,Kürzlich geöffnet,Recientemente abierto,Récemment ouvert,Недавно открытые,Recentemente aberto,Aperti di recente
 sortByCustom,手动排序,Custom order,手動排序,手動排序,カスタム順,사용자 정의 순서,Benutzerdefinierte Reihenfolge,Orden personalizado,Ordre personnalisé,Пользовательский порядок,Ordem personalizada,Ordine personalizzato
 tags,标签,Tags,標籤,標籤,タグ,태그,Tags,Etiquetas,Tags,Теги,Tags,Tag
 tagsPlaceholder,"用逗号分隔标签，例如 work, email","Separate tags with commas, e.g. work, email","用逗號分隔標籤，例如 work, email","用逗號分隔標籤，例如 work, email","カンマでタグを区切ってください（例：work, email）","쉼표로 태그를 구분하세요 (예: work, email)","Trennen Sie Tags mit Kommas, z. B. work, email","Separa las etiquetas con comas, ej: work, email","Séparez les tags par des virgules, ex: work, email","Разделяйте теги запятыми, например: work, email","Separe as tags com vírgulas, ex: work, email","Separa i tag con virgole, es: work, email"
 close,关闭,Close,關閉,關閉,閉じる,닫기,Schließen,Cerrar,Fermer,Закрыть,Fechar,Chiudi
+theme,主题,Theme,主題,主題,テーマ,테마,Design,Tema,Thème,Тема,Tema,Tema
+themeDark,深色,Dark,深色模式,深色模式,ダークテーマ,다크 모드,Dunkel,Oscuro,Sombre,Темная тема,Escuro,Scuro
+themeLight,浅色,Light,淺色模式,淺色模式,ライトテーマ,라이트 모드,Hell,Claro,Clair,Светлая тема,Claro,Chiaro
+themeSystem,跟随系统,System,跟隨系統,跟隨系統,システムに合わせる,시스템 기본,System,Sistema,Système,Системная тема,Sistema,Sistema
+accentColor,主题色,Accent color,強調色,強調色,アクセントカラー,강조 색상,Akzentfarbe,Color de acento,Couleur d'accent,Акцентный цвет,Cor de destaque,Colore accento
+colorBlue,蓝色,Blue,藍色,藍色,青,파란색,Blau,Azul,Bleu,Синий,Azul,Blu
+colorPurple,紫色,Purple,紫色,紫色,紫,보라색,Lila,Morado,Violet,Фиолетовый,Roxo,Viola
+colorGreen,绿色,Green,綠色,綠色,緑,녹색,Grün,Verde,Vert,Зеленый,Verde,Verde
+colorRed,红色,Red,紅色,紅色,赤,빨간색,Rot,Rojo,Rouge,Красный,Vermelho,Rosso
+colorOrange,橙色,Orange,橙色,橙色,オレンジ,주황색,Orange,Naranja,Orange,Оранжевый,Laranja,Arancione
+colorPink,粉色,Pink,粉紅色,粉紅色,ピンク,분홍색,Rosa,Rosa,Rose,Розовый,Rosa,Rosa
+colorTeal,青色,Teal,青綠色,藍綠色,ティール,청록색,Türkis,Turquesa,Turquoise,Бирюзовый,Turquesa,Turchese

@@ -132,10 +132,23 @@ const ko: Partial<Translations> = {
   sortByNameZA: "이름 Z-A",
   sortByDateNewest: "최신순",
   sortByDateOldest: "오래된순",
+  sortByRecent: "최근 열은",
   sortByCustom: "사용자 정의 순서",
   tags: "태그",
   tagsPlaceholder: "쉼표로 태그를 구분하세요 (예: work, email)",
   close: "닫기",
+  theme: "테마",
+  themeDark: "다크 모드",
+  themeLight: "라이트 모드",
+  themeSystem: "시스템 기본",
+  accentColor: "강조 색상",
+  colorBlue: "파란색",
+  colorPurple: "보라색",
+  colorGreen: "녹색",
+  colorRed: "빨간색",
+  colorOrange: "주황색",
+  colorPink: "분홍색",
+  colorTeal: "청록색",
 };
 
 export default ko;

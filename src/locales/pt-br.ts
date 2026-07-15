@@ -132,10 +132,23 @@ const ptBr: Partial<Translations> = {
   sortByNameZA: "Nome Z-A",
   sortByDateNewest: "Mais recente primeiro",
   sortByDateOldest: "Mais antigo primeiro",
+  sortByRecent: "Recentemente aberto",
   sortByCustom: "Ordem personalizada",
   tags: "Tags",
   tagsPlaceholder: "Separe as tags com vírgulas, ex: work, email",
   close: "Fechar",
+  theme: "Tema",
+  themeDark: "Escuro",
+  themeLight: "Claro",
+  themeSystem: "Sistema",
+  accentColor: "Cor de destaque",
+  colorBlue: "Azul",
+  colorPurple: "Roxo",
+  colorGreen: "Verde",
+  colorRed: "Vermelho",
+  colorOrange: "Laranja",
+  colorPink: "Rosa",
+  colorTeal: "Turquesa",
 };
 
 export default ptBr;

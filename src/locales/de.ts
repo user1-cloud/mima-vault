@@ -132,10 +132,23 @@ const de: Partial<Translations> = {
   sortByNameZA: "Name Z-A",
   sortByDateNewest: "Neueste zuerst",
   sortByDateOldest: "Älteste zuerst",
+  sortByRecent: "Kürzlich geöffnet",
   sortByCustom: "Benutzerdefinierte Reihenfolge",
   tags: "Tags",
   tagsPlaceholder: "Trennen Sie Tags mit Kommas, z. B. work, email",
   close: "Schließen",
+  theme: "Design",
+  themeDark: "Dunkel",
+  themeLight: "Hell",
+  themeSystem: "System",
+  accentColor: "Akzentfarbe",
+  colorBlue: "Blau",
+  colorPurple: "Lila",
+  colorGreen: "Grün",
+  colorRed: "Rot",
+  colorOrange: "Orange",
+  colorPink: "Rosa",
+  colorTeal: "Türkis",
 };
 
 export default de;

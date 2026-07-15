@@ -132,10 +132,23 @@ const zhHk: Partial<Translations> = {
   sortByNameZA: "名稱 Z-A",
   sortByDateNewest: "最近優先",
   sortByDateOldest: "最早優先",
+  sortByRecent: "最近開啟",
   sortByCustom: "手動排序",
   tags: "標籤",
   tagsPlaceholder: "用逗號分隔標籤，例如 work, email",
   close: "關閉",
+  theme: "主題",
+  themeDark: "深色模式",
+  themeLight: "淺色模式",
+  themeSystem: "跟隨系統",
+  accentColor: "強調色",
+  colorBlue: "藍色",
+  colorPurple: "紫色",
+  colorGreen: "綠色",
+  colorRed: "紅色",
+  colorOrange: "橙色",
+  colorPink: "粉紅色",
+  colorTeal: "青綠色",
 };
 
 export default zhHk;

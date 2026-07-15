@@ -1,6 +1,6 @@
 [package]
 name = "mima"
-version = "1.0.0"
+version = "1.0.1"
 description = "A modern, lightweight password manager"
 authors = ["you"]
 edition = "2021"

@@ -132,10 +132,23 @@ const ru: Partial<Translations> = {
   sortByNameZA: "Имя Z-A",
   sortByDateNewest: "Сначала новые",
   sortByDateOldest: "Сначала старые",
+  sortByRecent: "Недавно открытые",
   sortByCustom: "Пользовательский порядок",
   tags: "Теги",
   tagsPlaceholder: "Разделяйте теги запятыми, например: work, email",
   close: "Закрыть",
+  theme: "Тема",
+  themeDark: "Темная тема",
+  themeLight: "Светлая тема",
+  themeSystem: "Системная тема",
+  accentColor: "Акцентный цвет",
+  colorBlue: "Синий",
+  colorPurple: "Фиолетовый",
+  colorGreen: "Зеленый",
+  colorRed: "Красный",
+  colorOrange: "Оранжевый",
+  colorPink: "Розовый",
+  colorTeal: "Бирюзовый",
 };
 
 export default ru;

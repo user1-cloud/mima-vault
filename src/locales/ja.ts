@@ -132,10 +132,23 @@ const ja: Partial<Translations> = {
   sortByNameZA: "名前 Z-A",
   sortByDateNewest: "新しい順",
   sortByDateOldest: "古い順",
+  sortByRecent: "最近開いた",
   sortByCustom: "カスタム順",
   tags: "タグ",
   tagsPlaceholder: "カンマでタグを区切ってください（例：work, email）",
   close: "閉じる",
+  theme: "テーマ",
+  themeDark: "ダークテーマ",
+  themeLight: "ライトテーマ",
+  themeSystem: "システムに合わせる",
+  accentColor: "アクセントカラー",
+  colorBlue: "青",
+  colorPurple: "紫",
+  colorGreen: "緑",
+  colorRed: "赤",
+  colorOrange: "オレンジ",
+  colorPink: "ピンク",
+  colorTeal: "ティール",
 };
 
 export default ja;
