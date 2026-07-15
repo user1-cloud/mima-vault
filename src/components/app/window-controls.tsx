@@ -59,7 +59,7 @@ export function WindowControls() {
   const close = useCallback(() => getCurrentWindow().close(), []);
 
   return (
-    <div className="flex h-8" data-tauri-drag-region="false">
+    <div className="flex h-8">
       <button
         onClick={minimize}
         className={`${btnBase} text-white/60 hover:bg-white/10 hover:text-white`}

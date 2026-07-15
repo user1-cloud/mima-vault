@@ -318,7 +318,7 @@ export function Vault() {
   return (
     <div className="h-full flex bg-surface relative overflow-hidden">
       {isDesktop() && (
-        <div className="absolute top-0 right-0 z-50">
+        <div className="absolute top-0 left-0 right-0 flex justify-end h-8 z-50" data-tauri-drag-region>
           <WindowControls />
         </div>
       )}
@@ -497,7 +497,7 @@ export function Vault() {
                 exit="exit"
                 className="p-6 lg:p-10"
               >
-                <div className="space-y-6">
+                <div className="space-y-6" data-tauri-drag-region="false">
                   <div className="md:hidden -mb-3">
                     <Tooltip content={t("back")} side="bottom">
                       <IconButton onClick={() => selectEntry(null)}>
@@ -896,6 +896,7 @@ function FieldCard({
       initial="hidden"
       animate="visible"
       className="group"
+      data-tauri-drag-region="false"
     >
       <CardSpotlight className="p-4 rounded-2xl bg-surface border-white/[0.2]" radius={250}>
         <div className="space-y-2">
