@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -62,7 +62,7 @@ export interface SortableCardListProps<T extends { id: number }> {
   items: T[];
   renderItem: (item: T, mode: DisplayMode) => React.ReactNode;
   dragOverlay?: (item: T, mode: DisplayMode) => React.ReactNode;
-  onReorder?: (orderedIds: number[]) => void;
+  onReorder?: (orderedIds: number[]) => Promise<void> | void;
   pageSize?: number;
   emptyState?: React.ReactNode;
   className?: string;
@@ -184,7 +184,7 @@ export function SortableCardList<T extends { id: number }>({
   const itemsRef = useRef(items);
   itemsRef.current = items;
 
-  const handleDragEnd = useCallback(() => {
+  const handleDragEnd = useCallback(async () => {
     setDragActive(false);
     const currentDragItems = dragItemsRef.current;
     const currentItems = itemsRef.current;
@@ -195,14 +195,11 @@ export function SortableCardList<T extends { id: number }>({
         ...dragIds,
         ...fullIds.filter((id) => !dragIds.includes(id)),
       ];
-      onReorder(reorderedIds);
+      await onReorder(reorderedIds);
     }
+    setDragItems(null);
     setTimeout(() => setActiveDragItem(null), 300);
   }, [onReorder, hasFilters]);
-
-  useEffect(() => {
-    setDragItems(null);
-  }, [items]);
 
   return (
     <div className={`flex flex-col flex-1 min-h-0 ${className ?? ""}`}>

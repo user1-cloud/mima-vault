@@ -265,10 +265,10 @@ export function Vault() {
   }, []);
 
   const handleReorder = useCallback(
-    (orderedIds: number[]) => {
+    async (orderedIds: number[]) => {
       const orders: [number, number][] = orderedIds.map((id, i) => [id, i * 1000]);
       setEntrySortKey("custom");
-      reorderEntries(orders);
+      await reorderEntries(orders);
     },
     [reorderEntries]
   );

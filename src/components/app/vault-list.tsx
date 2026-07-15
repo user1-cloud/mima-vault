@@ -212,10 +212,10 @@ export function VaultList() {
   }, [vaultName, password, confirm, createVault]);
 
   const handleReorder = useCallback(
-    (orderedIds: number[]) => {
+    async (orderedIds: number[]) => {
       const orders: [number, number][] = orderedIds.map((id, i) => [id, i * 1000]);
       setVaultSortKey("custom");
-      reorderVaults(orders);
+      await reorderVaults(orders);
     },
     [reorderVaults]
   );
