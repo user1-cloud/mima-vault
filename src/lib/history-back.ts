@@ -7,6 +7,7 @@ interface BackEntry {
 
 const backStack: BackEntry[] = [];
 let isProgrammaticBack = false;
+export function isBackProgrammatic() { return isProgrammaticBack; }
 let popstatePoppedId: number | null = null;
 let nextId = 1;
 

@@ -126,7 +126,9 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
           const code = jsQR(imageData.data, imageData.width, imageData.height);
           bitmap.close();
           if (code?.data.startsWith("otpauth://")) {
-            setValue("totp", code.data);
+            const url = new URL(code.data);
+            const secret = url.searchParams.get("secret") || "";
+            setValue("totp", secret);
             return;
           }
         }
@@ -152,7 +154,7 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
           ...data,
           url: data.url || null,
           notes: data.notes || null,
-          totp: data.totp || null,
+          totp: data.totp ? data.totp.replace(/[^A-Za-z2-7=]/g, "").toUpperCase() : null,
           tags: data.tags || null,
         };
         if (entry) {

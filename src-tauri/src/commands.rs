@@ -505,11 +505,15 @@ pub fn generate_totp_code(
     let totp = if totp_secret.starts_with("otpauth://") {
         TOTP::from_url(&totp_secret).map_err(|e| format!("Invalid otpauth URL: {}", e))?
     } else {
-        let secret = Secret::Encoded(totp_secret)
+        let sanitized: String = totp_secret
+            .chars()
+            .filter(|c| c.is_ascii_alphabetic() || matches!(c, '2'..='7' | '='))
+            .collect::<String>()
+            .to_uppercase();
+        let secret = Secret::Encoded(sanitized)
             .to_bytes()
             .map_err(|e| format!("Invalid base32 secret: {}", e))?;
-        TOTP::new(Algorithm::SHA1, 6, 1, 30, secret, None, "".into())
-            .map_err(|e| format!("TOTP setup failed: {}", e))?
+        TOTP::new_unchecked(Algorithm::SHA1, 6, 1, 30, secret, None, "".into())
     };
 
     let code = totp.generate_current().map_err(|e| format!("TOTP generation failed: {}", e))?;

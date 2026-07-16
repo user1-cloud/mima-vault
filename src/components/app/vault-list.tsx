@@ -159,7 +159,8 @@ export function VaultList() {
   const [showAllVaults, setShowAllVaults] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [countdown, setCountdown] = useState(5);
-  const [vaultSortKey, setVaultSortKey] = useState("recent");
+  const [vaultSortKey, setVaultSortKey] = useState(() => localStorage.getItem("mima-vault-sort") || "recent");
+  useEffect(() => { localStorage.setItem("mima-vault-sort", vaultSortKey); }, [vaultSortKey]);
 
   const sortedVaults = useMemo(
     () => sortVaults(vaults, vaultSortKey),

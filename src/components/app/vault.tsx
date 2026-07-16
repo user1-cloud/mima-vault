@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { replaceTo } from "@/lib/navigation";
+import { isBackProgrammatic } from "@/lib/history-back";
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import {
   Search,
@@ -164,6 +165,7 @@ function DetailBackLayer({ onDeselect, children }: { onDeselect: () => void; chi
     window.history.pushState({ ...window.history.state }, "", url);
 
     function onPopState(e: PopStateEvent) {
+      if (isBackProgrammatic()) return;
       e.stopImmediatePropagation();
       onBackRef.current();
     }
@@ -232,7 +234,8 @@ export function Vault() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [entrySortKey, setEntrySortKey] = useState("name-asc");
+  const [entrySortKey, setEntrySortKey] = useState(() => localStorage.getItem("mima-entry-sort") || "name-asc");
+  useEffect(() => { localStorage.setItem("mima-entry-sort", entrySortKey); }, [entrySortKey]);
   const [entryFilters, setEntryFilters] = useState<string[]>([]);
 
   const [exportFormatOpen, setExportFormatOpen] = useState(false);
@@ -331,7 +334,7 @@ export function Vault() {
   return (
     <div className="h-full flex bg-surface relative overflow-hidden">
       {isDesktop() && (
-        <div className="absolute top-0 left-0 right-0 flex justify-end h-8 z-50" data-tauri-drag-region>
+        <div className="absolute top-0 left-0 right-0 flex justify-end h-8 z-[60]" data-tauri-drag-region>
           <WindowControls />
         </div>
       )}
@@ -1005,7 +1008,8 @@ function TotpDisplay({ entryId, index }: { entryId: number; index: number }) {
         setTotp(data);
         setError(false);
         setCountdown(data.remaining_seconds);
-      } catch {
+      } catch (e) {
+        console.error("TOTP generate error:", e);
         if (!cancelled) {
           setTotp(null);
           setError(true);
