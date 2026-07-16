@@ -2311,7 +2311,7 @@ dependencies = [
 
 [[package]]
 name = "mima"
-version = "1.0.2"
+version = "1.0.3"
 dependencies = [
  "aes-gcm",
  "argon2",

@@ -504,8 +504,8 @@ export function Vault() {
       </div>
 
       {/* Detail pane */}
-      <div className={`flex-1 flex flex-col relative z-10 ${selected ? '' : 'hidden md:flex'}`}>
-        <div className="flex-1 overflow-auto">
+      <div className={`flex-1 flex flex-col relative z-10 min-w-0 ${selected ? '' : 'hidden md:flex'}`}>
+        <div className="flex-1 overflow-auto min-w-0">
           <AnimatePresence mode="wait">
             {selected ? (
               <DetailBackLayer onDeselect={() => selectEntry(null)}>
@@ -526,8 +526,8 @@ export function Vault() {
                     </Tooltip>
                   </div>
                   {/* Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-4">
+                  <div className="flex items-start justify-between min-w-0">
+                    <div className="flex items-start gap-4 min-w-0 flex-1">
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
@@ -538,10 +538,10 @@ export function Vault() {
                           {selected.name.charAt(0).toUpperCase()}
                         </span>
                       </motion.div>
-                      <div className="flex flex-col">
+                      <div className="flex flex-col min-w-0">
                         <EncryptedText
                           text={selected.name}
-                          className="text-xl font-semibold"
+                          className="text-xl font-semibold break-all"
                         />
                         {selected.url && (
                           <button
@@ -550,10 +550,10 @@ export function Vault() {
                               const url = selected.url!;
                               open(/^https?:\/\//i.test(url) ? url : `https://${url}`);
                             }}
-                            className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-1 transition-colors hover:text-primary/80"
+                            className="text-sm text-primary hover:underline inline-flex items-center gap-1 mt-1 transition-colors hover:text-primary/80 min-w-0"
                           >
-                            <Globe className="w-3 h-3" />
-                            <span className="truncate max-w-[300px]">{selected.url}</span>
+                            <Globe className="w-3 h-3 shrink-0" />
+                            <span className="truncate">{selected.url}</span>
                             <ExternalLink className="w-3 h-3 shrink-0" />
                           </button>
                         )}
@@ -920,21 +920,21 @@ function FieldCard({
       className="group"
       data-tauri-drag-region="false"
     >
-      <CardSpotlight className="p-4 rounded-2xl bg-surface border-foreground/[0.1]" radius={250}>
-        <div className="space-y-2">
+      <CardSpotlight className="p-4 rounded-2xl bg-surface border-foreground/[0.1] overflow-hidden" radius={250}>
+        <div className="space-y-2 min-w-0">
           <CardTitle>
-            <div className="flex items-center gap-2 -mt-3">
-              <span className="text-primary/70">{icon}</span>
-              <span className="text-xs font-medium text-muted-foreground tracking-wide uppercase">
+            <div className="flex items-center gap-2 -mt-3 min-w-0">
+              <span className="text-primary/70 shrink-0">{icon}</span>
+              <span className="text-xs font-medium text-muted-foreground tracking-wide uppercase truncate">
                 {label}
               </span>
             </div>
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <span
               className={`flex-1 text-sm text-foreground/90 select-text min-w-0 ${
                 isSecret && !revealed
-                  ? "font-mono tracking-[0.3em]"
+                  ? "font-mono tracking-[0.3em] truncate"
                   : multiline
                     ? "whitespace-pre-wrap break-words max-h-48 overflow-y-auto"
                     : "break-all"
