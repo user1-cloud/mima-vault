@@ -2311,10 +2311,11 @@ dependencies = [
 
 [[package]]
 name = "mima"
-version = "1.0.1"
+version = "1.0.2"
 dependencies = [
  "aes-gcm",
  "argon2",
+ "base64 0.22.1",
  "keyring",
  "rand 0.8.6",
  "rusqlite",
@@ -2325,6 +2326,7 @@ dependencies = [
  "tauri-plugin-biometry",
  "tauri-plugin-clipboard-manager",
  "tauri-plugin-dialog",
+ "tauri-plugin-fs",
  "tauri-plugin-idlemonitor",
  "tauri-plugin-shell",
  "totp-rs",

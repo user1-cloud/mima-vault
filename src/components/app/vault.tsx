@@ -37,6 +37,7 @@ import { isDesktop } from "@/lib/platform";
 import { t } from "@/lib/i18n";
 import { open } from "@tauri-apps/plugin-shell";
 import { save, open as openFile } from "@tauri-apps/plugin-dialog";
+import { readFile } from "@tauri-apps/plugin-fs";
 import { IconButton } from "@/components/ui/icon-button";
 import { HighlightIconButton } from "@/components/ui/highlight-icon-button";
 import { DangerIconButton } from "@/components/ui/danger-icon-button";
@@ -176,6 +177,15 @@ function DetailBackLayer({ onDeselect, children }: { onDeselect: () => void; chi
   return <>{children}</>;
 }
 
+async function readFileAsBase64(path: string): Promise<string> {
+  const data = await readFile(path);
+  let binary = "";
+  for (let i = 0; i < data.length; i++) {
+    binary += String.fromCharCode(data[i]);
+  }
+  return btoa(binary);
+}
+
 export function Vault() {
   const {
     entries,
@@ -233,6 +243,7 @@ export function Vault() {
 
   const [importPwOpen, setImportPwOpen] = useState(false);
   const [importPendingPath, setImportPendingPath] = useState<string | null>(null);
+  const [importPendingContent, setImportPendingContent] = useState<string | null>(null);
   const [importPw, setImportPw] = useState("");
   const [importPwError, setImportPwError] = useState("");
 
@@ -283,6 +294,7 @@ export function Vault() {
     setImportPwOpen(false);
     setImportPw("");
     setImportPwError("");
+    setImportPendingContent(null);
   }, []);
 
   const handleEdit = useCallback((entry: Entry) => {
@@ -456,21 +468,28 @@ export function Vault() {
             <Tooltip content={t("import")} side="bottom">
               <IconButton
                 onClick={async () => {
+                  const filters = isDesktop()
+                    ? [
+                        { name: t("jsonFile"), extensions: ["json"] },
+                        { name: t("backupFile"), extensions: ["mima-backup"] },
+                      ]
+                    : [];
                   const p = await openFile({
-                    filters: [
-                      { name: t("jsonFile"), extensions: ["json"] },
-                      { name: t("backupFile"), extensions: ["mima-backup"] },
-                    ],
+                    multiple: false,
+                    filters,
                   });
                   if (!p) return;
+                  const path = p as string;
+                  const content = await readFileAsBase64(path);
                   try {
-                    const preview = await useApp.getState().previewImport(p as string);
+                    const preview = await useApp.getState().previewImport(path, content);
                     if (preview.entries.length > 0) {
-                      await useApp.getState().confirmImport(p as string);
+                      await useApp.getState().confirmImport(path, content);
                       await useApp.getState().loadEntries();
                     }
                   } catch {
-                    setImportPendingPath(p as string);
+                    setImportPendingPath(path);
+                    setImportPendingContent(content);
                     setImportPw("");
                     setImportPwError("");
                     setImportPwOpen(true);
@@ -838,12 +857,14 @@ export function Vault() {
                 onClick={async () => {
                   if (!importPendingPath) return;
                   try {
+                    const content = importPendingContent ?? await readFileAsBase64(importPendingPath);
                     const preview = await useApp.getState().previewEncryptedImport(
                       importPendingPath,
                       importPw,
+                      content,
                     );
                     if (preview.entries.length > 0) {
-                      await useApp.getState().confirmEncryptedImport(importPendingPath, importPw);
+                      await useApp.getState().confirmEncryptedImport(importPendingPath, importPw, content);
                       await useApp.getState().loadEntries();
                       closeImportPw();
                     }

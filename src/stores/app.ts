@@ -87,15 +87,17 @@ interface AppState {
 
   exportPlaintext: (savePath: string) => Promise<void>;
   exportEncryptedBackup: (savePath: string, password: string) => Promise<void>;
-  previewImport: (filePath: string) => Promise<ImportPreviewData>;
-  confirmImport: (filePath: string) => Promise<number>;
+  previewImport: (filePath: string, content?: string) => Promise<ImportPreviewData>;
+  confirmImport: (filePath: string, content?: string) => Promise<number>;
   previewEncryptedImport: (
     filePath: string,
-    password: string
+    password: string,
+    content?: string
   ) => Promise<ImportPreviewData>;
   confirmEncryptedImport: (
     filePath: string,
-    password: string
+    password: string,
+    content?: string
   ) => Promise<number>;
 
   checkBiometricAvailable: () => Promise<boolean>;
@@ -126,6 +128,7 @@ export const useApp = create<AppState>((set, get) => ({
       name,
       masterPassword: password,
     });
+    await get().loadVaults();
     set({ activeVault: vault, isLocked: false, entries: [], selectedId: null, searchQuery: "" });
     return vault;
   },
@@ -241,29 +244,32 @@ export const useApp = create<AppState>((set, get) => ({
     });
   },
 
-  previewImport: async (filePath) => {
-    return await invoke<ImportPreviewData>("preview_import", { filePath });
+  previewImport: async (filePath, content) => {
+    return await invoke<ImportPreviewData>("preview_import", { filePath, content });
   },
 
-  confirmImport: async (filePath) => {
+  confirmImport: async (filePath, content) => {
     const count = await invoke<number>("confirm_import", {
       filePath,
+      content,
     });
     await get().loadEntries();
     return count;
   },
 
-  previewEncryptedImport: async (filePath, password) => {
+  previewEncryptedImport: async (filePath, password, content) => {
     return await invoke<ImportPreviewData>("preview_encrypted_import", {
       filePath,
       backupPassword: password,
+      content,
     });
   },
 
-  confirmEncryptedImport: async (filePath, password) => {
+  confirmEncryptedImport: async (filePath, password, content) => {
     const count = await invoke<number>("confirm_encrypted_import", {
       filePath,
       backupPassword: password,
+      content,
     });
     await get().loadEntries();
     return count;

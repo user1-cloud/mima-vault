@@ -81,6 +81,9 @@ pub fn create_vault(
     let mut id_guard = db.vault_id.lock().map_err(|e| e.to_string())?;
     *id_guard = Some(vault_info.id);
 
+    let meta_conn = meta.conn.lock().map_err(|e| e.to_string())?;
+    meta_db::touch_vault(&meta_conn, vault_info.id).map_err(|e| e.to_string())?;
+
     Ok(vault_info)
 }
 
@@ -692,10 +695,25 @@ pub fn export_encrypted(
     Ok(())
 }
 
+fn resolve_import_bytes(file_path: &str, content: Option<&str>) -> Result<Vec<u8>, String> {
+    if let Some(b64) = content.filter(|c| !c.is_empty()) {
+        use base64::Engine;
+        base64::engine::general_purpose::STANDARD
+            .decode(b64)
+            .map_err(|e| format!("Failed to decode content: {}", e))
+    } else {
+        std::fs::read(file_path)
+            .map_err(|e| format!("Failed to read file: {}", e))
+    }
+}
+
 #[tauri::command]
-pub fn preview_import(file_path: String) -> Result<ImportPreview, String> {
-    let json = std::fs::read_to_string(&file_path)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+pub fn preview_import(
+    file_path: String,
+    content: Option<String>,
+) -> Result<ImportPreview, String> {
+    let bytes = resolve_import_bytes(&file_path, content.as_deref())?;
+    let json = String::from_utf8(bytes).map_err(|_| "Invalid UTF-8 in file".to_string())?;
     let data: ExportData =
         serde_json::from_str(&json).map_err(|_| "Invalid file format".to_string())?;
 
@@ -714,9 +732,10 @@ pub fn confirm_import(
     db: State<'_, DbState>,
     vault_key: State<'_, VaultKey>,
     file_path: String,
+    content: Option<String>,
 ) -> Result<usize, String> {
-    let json = std::fs::read_to_string(&file_path)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+    let bytes = resolve_import_bytes(&file_path, content.as_deref())?;
+    let json = String::from_utf8(bytes).map_err(|_| "Invalid UTF-8 in file".to_string())?;
     let data: ExportData =
         serde_json::from_str(&json).map_err(|_| "Invalid file format".to_string())?;
 
@@ -764,9 +783,9 @@ pub fn confirm_import(
 pub fn preview_encrypted_import(
     file_path: String,
     backup_password: String,
+    content: Option<String>,
 ) -> Result<ImportPreview, String> {
-    let encoded = std::fs::read(&file_path)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+    let encoded = resolve_import_bytes(&file_path, content.as_deref())?;
     let backup: crypto::EncryptedBackup =
         serde_json::from_slice(&encoded).map_err(|_| "Invalid backup file format".to_string())?;
     let json =
@@ -790,9 +809,9 @@ pub fn confirm_encrypted_import(
     vault_key: State<'_, VaultKey>,
     file_path: String,
     backup_password: String,
+    content: Option<String>,
 ) -> Result<usize, String> {
-    let encoded = std::fs::read(&file_path)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+    let encoded = resolve_import_bytes(&file_path, content.as_deref())?;
     let backup: crypto::EncryptedBackup =
         serde_json::from_slice(&encoded).map_err(|_| "Invalid backup file format".to_string())?;
     let json =
