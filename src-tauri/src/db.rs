@@ -47,8 +47,39 @@ impl DbState {
                 updated_at TEXT NOT NULL DEFAULT (datetime('now'))
             );
 
-            CREATE INDEX IF NOT EXISTS idx_entries_sort ON entries(sort_order ASC);"
+            CREATE INDEX IF NOT EXISTS idx_entries_sort ON entries(sort_order ASC);
+
+            CREATE TABLE IF NOT EXISTS field_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entry_id INTEGER NOT NULL,
+                field_name TEXT NOT NULL,
+                old_value TEXT NOT NULL,
+                changed_at TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (entry_id) REFERENCES entries(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS recycle_bin (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_type TEXT NOT NULL CHECK (item_type IN ('entry', 'custom_field')),
+                item_name TEXT NOT NULL,
+                item_data TEXT NOT NULL,
+                deleted_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );"
         ).map_err(|e| e.to_string())?;
+
+        // Migration: update recycle_bin CHECK to allow custom_field type
+        let _ = conn.execute_batch(
+            "ALTER TABLE recycle_bin RENAME TO rb_old;
+            CREATE TABLE recycle_bin (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_type TEXT NOT NULL CHECK (item_type IN ('entry', 'custom_field')),
+                item_name TEXT NOT NULL,
+                item_data TEXT NOT NULL,
+                deleted_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            INSERT OR IGNORE INTO recycle_bin SELECT * FROM rb_old;
+            DROP TABLE IF EXISTS rb_old;"
+        );
 
         let _ = conn.execute("ALTER TABLE entries ADD COLUMN sort_order REAL NOT NULL DEFAULT 0", []);
         let _ = conn.execute("ALTER TABLE entries ADD COLUMN totp_nonce BLOB", []);
@@ -279,4 +310,118 @@ pub fn fetch_all_entries(conn: &Connection) -> Vec<EntryRow> {
         })
         .unwrap();
     rows.filter_map(|r| r.ok()).collect()
+}
+
+// ─── Field history ───
+
+pub fn record_field_history(
+    conn: &Connection,
+    entry_id: i64,
+    field_name: &str,
+    old_value: &str,
+) -> Result<(), rusqlite::Error> {
+    // Keep only the last 5 records per field per entry
+    conn.execute(
+        "DELETE FROM field_history WHERE id IN (
+            SELECT id FROM field_history WHERE entry_id = ?1 AND field_name = ?2
+            ORDER BY changed_at DESC LIMIT -1 OFFSET 4
+        )",
+        params![entry_id, field_name],
+    )?;
+    conn.execute(
+        "INSERT INTO field_history (entry_id, field_name, old_value) VALUES (?1, ?2, ?3)",
+        params![entry_id, field_name, old_value],
+    )?;
+    Ok(())
+}
+
+#[derive(Serialize)]
+pub struct FieldHistoryEntry {
+    pub old_value: String,
+    pub changed_at: String,
+}
+
+pub fn get_field_history(
+    conn: &Connection,
+    entry_id: i64,
+    field_name: &str,
+) -> Result<Vec<FieldHistoryEntry>, rusqlite::Error> {
+    let mut stmt = conn.prepare(
+        "SELECT old_value, changed_at FROM field_history
+         WHERE entry_id = ?1 AND field_name = ?2
+         ORDER BY changed_at DESC LIMIT 5",
+    )?;
+    let rows = stmt.query_map(params![entry_id, field_name], |row| {
+        Ok(FieldHistoryEntry {
+            old_value: row.get(0)?,
+            changed_at: row.get(1)?,
+        })
+    })?;
+    rows.collect()
+}
+
+// ─── Recycle bin (entries) ───
+
+#[derive(Serialize, Deserialize)]
+pub struct RecycleBinItem {
+    pub id: i64,
+    pub item_type: String,
+    pub item_name: String,
+    pub item_data: String,
+    pub deleted_at: String,
+}
+
+pub fn add_to_recycle_bin(
+    conn: &Connection,
+    item_name: &str,
+    item_data: &str,
+) -> Result<i64, rusqlite::Error> {
+    conn.execute(
+        "INSERT INTO recycle_bin (item_type, item_name, item_data) VALUES ('entry', ?1, ?2)",
+        params![item_name, item_data],
+    )?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn add_custom_field_to_recycle_bin(
+    conn: &Connection,
+    entry_id: i64,
+    key: &str,
+    value: &str,
+) -> Result<i64, rusqlite::Error> {
+    let data = serde_json::json!({ "entry_id": entry_id, "key": key, "value": value }).to_string();
+    conn.execute(
+        "INSERT INTO recycle_bin (item_type, item_name, item_data) VALUES ('custom_field', ?1, ?2)",
+        params![key, data],
+    )?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn list_recycle_bin(conn: &Connection) -> Result<Vec<RecycleBinItem>, rusqlite::Error> {
+    let mut stmt = conn.prepare(
+        "SELECT id, item_type, item_name, item_data, deleted_at FROM recycle_bin ORDER BY deleted_at DESC",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok(RecycleBinItem {
+            id: row.get(0)?,
+            item_type: row.get(1)?,
+            item_name: row.get(2)?,
+            item_data: row.get(3)?,
+            deleted_at: row.get(4)?,
+        })
+    })?;
+    rows.collect()
+}
+
+pub fn remove_from_recycle_bin(conn: &Connection, bin_id: i64) -> Result<(), rusqlite::Error> {
+    conn.execute("DELETE FROM recycle_bin WHERE id = ?1", params![bin_id])?;
+    Ok(())
+}
+
+pub fn cleanup_recycle_bin(conn: &Connection) -> Result<usize, rusqlite::Error> {
+    let count = conn.execute(
+        "DELETE FROM recycle_bin WHERE deleted_at < datetime('now', '-30 days')",
+        [],
+    )?;
+    Ok(count)
 }

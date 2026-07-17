@@ -154,6 +154,16 @@ const zh = {
   addCustomField: "添加自定义字段",
   removeCustomField: "删除自定义字段",
   confirmRemoveCustomField: "确定要删除自定义字段「{name}」吗？",
+  fieldHistory: "字段历史",
+  noHistory: "暂无历史记录",
+  recycleBin: "回收站",
+  recycleBinEmpty: "回收站是空的",
+  deletedVaults: "已删除的密码库",
+  restore: "恢复",
+  permanentlyDelete: "彻底删除",
+  confirmPermanentlyDelete: "确认彻底删除",
+  confirmPermanentlyDeleteMessage: "确定要彻底删除「{name}」吗？此操作不可撤销。",
+  daysRemaining: "剩余 {n} 天",
 };
 
 export type Translations = typeof zh;

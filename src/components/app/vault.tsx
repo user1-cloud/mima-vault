@@ -28,6 +28,8 @@ import {
   Clock,
   Tag,
   GripVertical,
+  History,
+  RotateCcw,
 } from "lucide-react";
 
 import { WindowControls } from "@/components/app/window-controls";
@@ -234,6 +236,13 @@ export function Vault() {
   const [showPassword, setShowPassword] = useState<Record<number, boolean>>({});
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [historyField, setHistoryField] = useState<{ entryId: number; fieldName: string; fieldLabel: string } | null>(null);
+  const [historyEntries, setHistoryEntries] = useState<import("@/stores/app").FieldHistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [recycleOpen, setRecycleOpen] = useState(false);
+  const [recycleItems, setRecycleItems] = useState<import("@/stores/app").RecycleBinItem[]>([]);
+  const [recycleLoading, setRecycleLoading] = useState(false);
+  const [permDeleteId, setPermDeleteId] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [entrySortKey, setEntrySortKey] = useState(() => localStorage.getItem("mima-entry-sort") || "name-asc");
   useEffect(() => { localStorage.setItem("mima-entry-sort", entrySortKey); }, [entrySortKey]);
@@ -311,6 +320,51 @@ export function Vault() {
   const handleCreate = useCallback(() => {
     setEditingEntry(null);
     setDialogOpen(true);
+  }, []);
+
+  const handleShowHistory = useCallback(
+    async (entryId: number, fieldName: string, fieldLabel: string) => {
+      setHistoryField({ entryId, fieldName, fieldLabel });
+      setHistoryLoading(true);
+      try {
+        const items = await useApp.getState().getFieldHistory(entryId, fieldName);
+        setHistoryEntries(items);
+      } catch {
+        setHistoryEntries([]);
+      } finally {
+        setHistoryLoading(false);
+      }
+    },
+    []
+  );
+
+  const closeHistory = useCallback(() => {
+    setHistoryField(null);
+    setHistoryEntries([]);
+  }, []);
+
+  const openRecycleBin = useCallback(async () => {
+    setRecycleOpen(true);
+    setRecycleLoading(true);
+    try {
+      const items = await useApp.getState().listRecycleBin();
+      setRecycleItems(items);
+    } catch {
+      setRecycleItems([]);
+    } finally {
+      setRecycleLoading(false);
+    }
+  }, []);
+
+  const handleRestore = useCallback(async (binId: number) => {
+    await useApp.getState().restoreRecycleItem(binId);
+    setRecycleItems((prev) => prev.filter((i) => i.id !== binId));
+  }, []);
+
+  const handlePermDelete = useCallback(async (binId: number) => {
+    await useApp.getState().permanentlyDeleteRecycleItem(binId);
+    setRecycleItems((prev) => prev.filter((i) => i.id !== binId));
+    setPermDeleteId(null);
   }, []);
 
   const handleDelete = useCallback(
@@ -471,6 +525,11 @@ export function Vault() {
                 <Download className="w-4 h-4" />
               </IconButton>
             </Tooltip>
+            <Tooltip content={t("recycleBin")} side="bottom">
+              <IconButton onClick={openRecycleBin}>
+                <Trash2 className="w-4 h-4" />
+              </IconButton>
+            </Tooltip>
             <Tooltip content={t("import")} side="bottom">
               <IconButton
                 onClick={async () => {
@@ -600,6 +659,7 @@ export function Vault() {
                       value={selected.username}
                       copied={copiedField === `user-${selected.id}`}
                       onCopy={() => handleCopy(selected.username, `user-${selected.id}`)}
+                      onHistory={() => handleShowHistory(selected.id, "username", t("username"))}
                     />
                     <FieldCard
                       index={1}
@@ -611,6 +671,7 @@ export function Vault() {
                       copied={copiedField === `pass-${selected.id}`}
                       onCopy={() => handleCopy(selected.password, `pass-${selected.id}`)}
                       onToggleReveal={() => toggleShow(selected.id)}
+                      onHistory={() => handleShowHistory(selected.id, "password", t("password"))}
                     />
                     {selected.totp && (
                       <TotpDisplay key={`${selected.id}-${selected.updated_at}`} entryId={selected.id} index={2} />
@@ -623,6 +684,7 @@ export function Vault() {
                         value={selected.url}
                         copied={copiedField === `url-${selected.id}`}
                         onCopy={() => handleCopy(selected.url!, `url-${selected.id}`)}
+                        onHistory={() => handleShowHistory(selected.id, "url", t("url"))}
                       />
                     )}
                     {selected.notes && (
@@ -634,6 +696,7 @@ export function Vault() {
                         multiline
                         copied={copiedField === `notes-${selected.id}`}
                         onCopy={() => handleCopy(selected.notes!, `notes-${selected.id}`)}
+                        onHistory={() => handleShowHistory(selected.id, "notes", t("notes"))}
                       />
                     )}
                     {selected.custom_fields &&
@@ -650,6 +713,7 @@ export function Vault() {
                               value={String(v)}
                               copied={copiedField === `cf-${selected.id}-${k}`}
                               onCopy={() => handleCopy(String(v), `cf-${selected.id}-${k}`)}
+                              onHistory={() => handleShowHistory(selected.id, "custom_fields", String(k))}
                             />
                           ));
                         } catch {
@@ -737,6 +801,134 @@ export function Vault() {
                 onClick={() => deleteConfirmId !== null && handleDelete(deleteConfirmId)}
               >
                 {t("deleteEntry")}
+              </DangerButton>
+            </div>
+          </ModalContent>
+        </ModalBody>
+      </Modal>
+
+      <Modal open={historyField !== null} onOpenChange={closeHistory}>
+        <ModalBody>
+          <ModalContent>
+            <h2 className="text-lg font-semibold mb-1">
+              {t("fieldHistory")}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {historyField?.fieldLabel}
+            </p>
+            {historyLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-4">{t("loading")}</p>
+            ) : historyEntries.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">{t("noHistory")}</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {historyEntries.map((entry, i) => {
+                  let displayValue = entry.old_value;
+                  if (historyField?.fieldName === "custom_fields") {
+                    try {
+                      const cf = JSON.parse(entry.old_value);
+                      if (cf && typeof cf === "object" && !Array.isArray(cf) && historyField.fieldLabel in cf) {
+                        displayValue = String(cf[historyField.fieldLabel]);
+                      }
+                    } catch { /* show raw value */ }
+                  }
+                  return (
+                    <div key={i} className="rounded-lg border border-border p-3 text-sm">
+                      <div className="text-foreground/90 break-all">{displayValue}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{entry.changed_at}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="flex justify-end mt-4">
+              <SecondaryButton onClick={closeHistory}>
+                {t("close")}
+              </SecondaryButton>
+            </div>
+          </ModalContent>
+        </ModalBody>
+      </Modal>
+
+      <Modal open={recycleOpen} onOpenChange={() => { setRecycleOpen(false); setPermDeleteId(null); }}>
+        <ModalBody>
+          <ModalContent>
+            <h2 className="text-lg font-semibold mb-4">{t("recycleBin")}</h2>
+            {recycleLoading ? (
+              <p className="text-sm text-muted-foreground text-center py-4">{t("loading")}</p>
+            ) : recycleItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">{t("recycleBinEmpty")}</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {recycleItems.map((item) => {
+                  const deletedDate = new Date(item.deleted_at);
+                  const daysLeft = 30 - Math.floor((Date.now() - deletedDate.getTime()) / 86400000);
+                  const isCustomField = item.item_type === "custom_field";
+                  let displayName = item.item_name;
+                  let displayValue = "";
+                  if (isCustomField) {
+                    try {
+                      const cf = JSON.parse(item.item_data);
+                      displayName = `${t("customFields")}: ${cf.key}`;
+                      displayValue = cf.value ?? "";
+                    } catch { /* fallback to item_name */ }
+                  }
+                  return (
+                    <div key={item.id} className="rounded-lg border border-border p-3 flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium truncate">{displayName}</div>
+                        {isCustomField && displayValue && (
+                          <div className="text-xs text-muted-foreground truncate">{displayValue}</div>
+                        )}
+                        <div className="text-xs text-muted-foreground">
+                          {item.deleted_at}
+                          {daysLeft > 0 && <span className="ml-2 text-muted-foreground/60">{t("daysRemaining", { n: daysLeft })}</span>}
+                        </div>
+                      </div>
+                      <Tooltip content={t("restore")} side="top">
+                        <IconButton className="h-7 w-7" onClick={() => handleRestore(item.id)}>
+                          <RotateCcw className="w-3.5 h-3.5" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip content={t("permanentlyDelete")} side="top">
+                        <DangerIconButton onClick={() => setPermDeleteId(item.id)}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </DangerIconButton>
+                      </Tooltip>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="flex justify-end mt-4">
+              <SecondaryButton onClick={() => { setRecycleOpen(false); setPermDeleteId(null); }}>
+                {t("close")}
+              </SecondaryButton>
+            </div>
+          </ModalContent>
+        </ModalBody>
+      </Modal>
+
+      <Modal open={permDeleteId !== null} onOpenChange={() => setPermDeleteId(null)}>
+        <ModalBody>
+          <ModalContent className="text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6 text-danger" />
+            </div>
+            <h2 className="text-lg font-semibold mb-2">{t("confirmPermanentlyDelete")}</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {t("confirmPermanentlyDeleteMessage", {
+                name: recycleItems.find((i) => i.id === permDeleteId)?.item_name ?? "",
+              })}
+            </p>
+            <div className="flex gap-3 justify-center">
+              <SecondaryButton onClick={() => setPermDeleteId(null)}>
+                {t("cancel")}
+              </SecondaryButton>
+              <DangerButton
+                onClick={() => permDeleteId !== null && handlePermDelete(permDeleteId)}
+              >
+                {t("permanentlyDelete")}
               </DangerButton>
             </div>
           </ModalContent>
@@ -941,6 +1133,7 @@ function FieldCard({
   copied,
   onCopy,
   onToggleReveal,
+  onHistory,
 }: {
   index: number;
   icon: React.ReactNode;
@@ -952,6 +1145,7 @@ function FieldCard({
   copied: boolean;
   onCopy: () => void;
   onToggleReveal?: () => void;
+  onHistory?: () => void;
 }) {
   return (
     <motion.div
@@ -1015,6 +1209,13 @@ function FieldCard({
                   </AnimatePresence>
                 </IconButton>
               </Tooltip>
+              {onHistory && (
+                <Tooltip content={t("fieldHistory")} side="top">
+                  <IconButton className="h-7 w-7" onClick={onHistory}>
+                    <History className="w-3.5 h-3.5" />
+                  </IconButton>
+                </Tooltip>
+              )}
             </div>
           </div>
         </div>

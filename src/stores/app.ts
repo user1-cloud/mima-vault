@@ -31,6 +31,7 @@ export interface VaultInfo {
   updated_at: string;
   last_opened_at?: string;
   sort_order: number;
+  deleted_at?: string | null;
 }
 
 export interface ExportEntry {
@@ -53,6 +54,19 @@ export interface TotpCode {
 export interface ImportPreviewData {
   entries: ExportEntry[];
   count: number;
+}
+
+export interface FieldHistoryEntry {
+  old_value: string;
+  changed_at: string;
+}
+
+export interface RecycleBinItem {
+  id: number;
+  item_type: string;
+  item_name: string;
+  item_data: string;
+  deleted_at: string;
 }
 
 interface AppState {
@@ -101,6 +115,17 @@ interface AppState {
     password: string,
     content?: string
   ) => Promise<number>;
+
+  removeCustomField: (entryId: number, key: string, value: string) => Promise<void>;
+  getFieldHistory: (entryId: number, fieldName: string) => Promise<FieldHistoryEntry[]>;
+  listRecycleBin: () => Promise<RecycleBinItem[]>;
+  restoreRecycleItem: (binId: number) => Promise<void>;
+  permanentlyDeleteRecycleItem: (binId: number) => Promise<void>;
+  cleanupRecycle: () => Promise<number>;
+  listDeletedVaults: () => Promise<VaultInfo[]>;
+  restoreVault: (vaultId: number) => Promise<void>;
+  permanentlyDeleteVault: (vaultId: number) => Promise<void>;
+  cleanupDeletedVaults: () => Promise<string[]>;
 
   checkBiometricAvailable: () => Promise<boolean>;
   checkBiometricEnabled: (vaultId: number) => Promise<boolean>;
@@ -277,6 +302,52 @@ export const useApp = create<AppState>((set, get) => ({
     });
     await get().loadEntries();
     return count;
+  },
+
+  removeCustomField: async (entryId, key, value) => {
+    await invoke("remove_custom_field", { entryId, key, value });
+  },
+
+  getFieldHistory: async (entryId, fieldName) => {
+    return await invoke<FieldHistoryEntry[]>("get_field_history", {
+      entryId,
+      fieldName,
+    });
+  },
+
+  listRecycleBin: async () => {
+    return await invoke<RecycleBinItem[]>("list_recycle_bin");
+  },
+
+  restoreRecycleItem: async (binId) => {
+    await invoke("restore_recycle_item", { binId });
+    await get().loadEntries();
+  },
+
+  permanentlyDeleteRecycleItem: async (binId) => {
+    await invoke("permanently_delete_recycle_item", { binId });
+  },
+
+  cleanupRecycle: async () => {
+    return await invoke<number>("cleanup_recycle");
+  },
+
+  listDeletedVaults: async () => {
+    return await invoke<VaultInfo[]>("list_deleted_vaults");
+  },
+
+  restoreVault: async (vaultId) => {
+    await invoke("restore_vault", { vaultId });
+    await get().loadVaults();
+  },
+
+  permanentlyDeleteVault: async (vaultId) => {
+    await invoke("permanently_delete_vault", { vaultId });
+    await get().loadVaults();
+  },
+
+  cleanupDeletedVaults: async () => {
+    return await invoke<string[]>("cleanup_deleted_vaults");
   },
 
   checkBiometricAvailable: async () => {

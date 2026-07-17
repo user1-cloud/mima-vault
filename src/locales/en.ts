@@ -156,6 +156,16 @@ const en: Translations = {
   addCustomField: "Add custom field",
   removeCustomField: "Remove custom field",
   confirmRemoveCustomField: "Remove custom field \"{name}\"?",
+  fieldHistory: "Field History",
+  noHistory: "No history available",
+  recycleBin: "Recycle Bin",
+  recycleBinEmpty: "Recycle bin is empty",
+  deletedVaults: "Deleted Vaults",
+  restore: "Restore",
+  permanentlyDelete: "Permanently Delete",
+  confirmPermanentlyDelete: "Confirm Permanent Delete",
+  confirmPermanentlyDeleteMessage: "Permanently delete \"{name}\"? This action cannot be undone.",
+  daysRemaining: "{n} days remaining",
 };
 
 export default en;

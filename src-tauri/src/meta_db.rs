@@ -26,6 +26,7 @@ pub struct VaultInfo {
     pub updated_at: String,
     pub last_opened_at: Option<String>,
     pub sort_order: f64,
+    pub deleted_at: Option<String>,
 }
 
 pub fn init_meta(conn: &Connection) -> Result<(), rusqlite::Error> {
@@ -54,6 +55,10 @@ pub fn init_meta(conn: &Connection) -> Result<(), rusqlite::Error> {
         "ALTER TABLE vaults ADD COLUMN sort_order REAL NOT NULL DEFAULT 0",
         [],
     );
+    let _ = conn.execute(
+        "ALTER TABLE vaults ADD COLUMN deleted_at TEXT",
+        [],
+    );
     Ok(())
 }
 
@@ -71,7 +76,7 @@ pub fn insert_vault(
 
 pub fn list_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error> {
     let mut stmt = conn.prepare(
-        "SELECT id, name, path, created_at, updated_at, last_opened_at, sort_order FROM vaults ORDER BY sort_order ASC, last_opened_at DESC, created_at DESC",
+        "SELECT id, name, path, created_at, updated_at, last_opened_at, sort_order, deleted_at FROM vaults WHERE deleted_at IS NULL ORDER BY sort_order ASC, last_opened_at DESC, created_at DESC",
     )?;
     let rows = stmt.query_map([], |row| {
         Ok(VaultInfo {
@@ -82,6 +87,7 @@ pub fn list_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error>
             updated_at: row.get(4)?,
             last_opened_at: row.get(5)?,
             sort_order: row.get(6)?,
+            deleted_at: row.get(7)?,
         })
     })?;
     rows.collect()
@@ -89,7 +95,7 @@ pub fn list_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error>
 
 pub fn get_vault(conn: &Connection, id: i64) -> Option<VaultInfo> {
     conn.query_row(
-        "SELECT id, name, path, created_at, updated_at, last_opened_at, sort_order FROM vaults WHERE id = ?1",
+        "SELECT id, name, path, created_at, updated_at, last_opened_at, sort_order, deleted_at FROM vaults WHERE id = ?1",
         params![id],
         |row| {
             Ok(VaultInfo {
@@ -100,6 +106,7 @@ pub fn get_vault(conn: &Connection, id: i64) -> Option<VaultInfo> {
                 updated_at: row.get(4)?,
                 last_opened_at: row.get(5)?,
                 sort_order: row.get(6)?,
+                deleted_at: row.get(7)?,
             })
         },
     )
@@ -126,9 +133,59 @@ pub fn rename_vault(
     get_vault(conn, id).ok_or(rusqlite::Error::QueryReturnedNoRows)
 }
 
-pub fn delete_vault(conn: &Connection, id: i64) -> Result<(), rusqlite::Error> {
+pub fn soft_delete_vault(conn: &Connection, id: i64) -> Result<(), rusqlite::Error> {
+    conn.execute(
+        "UPDATE vaults SET deleted_at = datetime('now') WHERE id = ?1",
+        params![id],
+    )?;
+    Ok(())
+}
+
+pub fn restore_vault(conn: &Connection, id: i64) -> Result<(), rusqlite::Error> {
+    conn.execute(
+        "UPDATE vaults SET deleted_at = NULL WHERE id = ?1",
+        params![id],
+    )?;
+    Ok(())
+}
+
+pub fn permanent_delete_vault(conn: &Connection, id: i64) -> Result<(), rusqlite::Error> {
     conn.execute("DELETE FROM vaults WHERE id = ?1", params![id])?;
     Ok(())
+}
+
+pub fn list_deleted_vaults(conn: &Connection) -> Result<Vec<VaultInfo>, rusqlite::Error> {
+    let mut stmt = conn.prepare(
+        "SELECT id, name, path, created_at, updated_at, last_opened_at, sort_order, deleted_at FROM vaults WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok(VaultInfo {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            path: row.get(2)?,
+            created_at: row.get(3)?,
+            updated_at: row.get(4)?,
+            last_opened_at: row.get(5)?,
+            sort_order: row.get(6)?,
+            deleted_at: row.get(7)?,
+        })
+    })?;
+    rows.collect()
+}
+
+pub fn cleanup_deleted_vaults(conn: &Connection) -> Result<Vec<String>, rusqlite::Error> {
+    let mut stmt = conn.prepare(
+        "SELECT path FROM vaults WHERE deleted_at IS NOT NULL AND deleted_at < datetime('now', '-30 days')",
+    )?;
+    let paths: Vec<String> = stmt
+        .query_map([], |row| row.get(0))?
+        .filter_map(|r| r.ok())
+        .collect();
+    conn.execute(
+        "DELETE FROM vaults WHERE deleted_at IS NOT NULL AND deleted_at < datetime('now', '-30 days')",
+        [],
+    )?;
+    Ok(paths)
 }
 
 pub fn reorder_vaults(conn: &Connection, orders: &[(i64, f64)]) -> Result<(), rusqlite::Error> {

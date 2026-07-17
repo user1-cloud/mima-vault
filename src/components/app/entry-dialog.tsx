@@ -55,7 +55,7 @@ export function EntryDialog({ open, onOpenChange, entry }: Props) {
 type CustomField = { key: string; value: string };
 
 function EntryDialogInner({ open, onOpenChange, entry }: Props) {
-  const { createEntry, updateEntry, generatePassword } = useApp();
+  const { createEntry, updateEntry, generatePassword, removeCustomField: saveRemovedCustomField } = useApp();
   const { open: isOpen, setOpen } = useModal();
 
   useLocale();
@@ -167,8 +167,12 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
   }, []);
 
   const removeCustomField = useCallback((index: number) => {
+    const field = customFields[index];
+    if (entry && field) {
+      saveRemovedCustomField(entry.id, field.key, field.value);
+    }
     setCustomFields((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  }, [customFields, entry, saveRemovedCustomField]);
 
   const updateCustomField = useCallback(
     (index: number, field: "key" | "value", val: string) => {

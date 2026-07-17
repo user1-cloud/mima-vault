@@ -21,6 +21,7 @@ impl VaultKey {
 #[tauri::command]
 pub fn list_vaults(meta: State<'_, MetaDb>) -> Result<Vec<VaultInfo>, String> {
     let conn = meta.conn.lock().map_err(|e| e.to_string())?;
+    let _ = meta_db::cleanup_deleted_vaults(&conn);
     meta_db::list_vaults(&conn).map_err(|e| e.to_string())
 }
 
@@ -117,6 +118,11 @@ pub fn open_vault(
 
         let meta_conn = meta.conn.lock().map_err(|e| e.to_string())?;
         meta_db::touch_vault(&meta_conn, vault_id).map_err(|e| e.to_string())?;
+        drop(meta_conn);
+
+        let conn_guard2 = db.conn.lock().map_err(|e| e.to_string())?;
+        let conn2 = conn_guard2.as_ref().ok_or("No vault is open")?;
+        let _ = db::cleanup_recycle_bin(conn2);
 
         Ok(true)
     } else {
@@ -180,10 +186,6 @@ pub fn delete_vault(
     vault_key: State<'_, VaultKey>,
     vault_id: i64,
 ) -> Result<(), String> {
-    let meta_conn = meta.conn.lock().map_err(|e| e.to_string())?;
-    let info = meta_db::get_vault(&meta_conn, vault_id).ok_or("Vault not found")?;
-    drop(meta_conn);
-
     let is_open = {
         let id_guard = db.vault_id.lock().map_err(|e| e.to_string())?;
         *id_guard == Some(vault_id)
@@ -200,10 +202,37 @@ pub fn delete_vault(
         db.close_vault();
     }
 
-    std::fs::remove_file(&info.path).map_err(|e| format!("Failed to delete vault file: {}", e))?;
+    let meta_conn = meta.conn.lock().map_err(|e| e.to_string())?;
+    meta_db::soft_delete_vault(&meta_conn, vault_id).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub fn list_deleted_vaults(meta: State<'_, MetaDb>) -> Result<Vec<VaultInfo>, String> {
+    let conn = meta.conn.lock().map_err(|e| e.to_string())?;
+    meta_db::list_deleted_vaults(&conn).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn restore_vault(meta: State<'_, MetaDb>, vault_id: i64) -> Result<(), String> {
+    let conn = meta.conn.lock().map_err(|e| e.to_string())?;
+    meta_db::restore_vault(&conn, vault_id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn permanently_delete_vault(
+    meta: State<'_, MetaDb>,
+    vault_id: i64,
+) -> Result<(), String> {
+    let meta_conn = meta.conn.lock().map_err(|e| e.to_string())?;
+    let info = meta_db::get_vault(&meta_conn, vault_id).ok_or("Vault not found")?;
+    drop(meta_conn);
+
+    let _ = std::fs::remove_file(&info.path);
 
     let meta_conn = meta.conn.lock().map_err(|e| e.to_string())?;
-    meta_db::delete_vault(&meta_conn, vault_id).map_err(|e| e.to_string())?;
+    meta_db::permanent_delete_vault(&meta_conn, vault_id).map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -231,7 +260,7 @@ pub struct ExportEntry {
     pub custom_fields: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct DecryptedEntry {
     pub id: i64,
     pub name: String,
@@ -411,6 +440,45 @@ pub fn update_entry(
     let conn = conn_guard.as_ref().ok_or("No vault is open")?;
     let key = key_guard.as_ref().ok_or("Vault is locked")?;
 
+    // Record field history by comparing old and new values
+    if let Some(old_row) = db::fetch_entry(conn, id) {
+        let old = decrypt_entry_row(&old_row, key)?;
+        if old.name != name {
+            let _ = db::record_field_history(conn, id, "name", &old.name);
+        }
+        if old.username != username {
+            let _ = db::record_field_history(conn, id, "username", &old.username);
+        }
+        if old.password != password {
+            let _ = db::record_field_history(conn, id, "password", &old.password);
+        }
+        if old.url != url {
+            if let Some(ref old_val) = old.url {
+                let _ = db::record_field_history(conn, id, "url", old_val);
+            }
+        }
+        if old.notes != notes {
+            if let Some(ref old_val) = old.notes {
+                let _ = db::record_field_history(conn, id, "notes", old_val);
+            }
+        }
+        if old.totp != totp {
+            if let Some(ref old_val) = old.totp {
+                let _ = db::record_field_history(conn, id, "totp", old_val);
+            }
+        }
+        if old.tags != tags {
+            if let Some(ref old_val) = old.tags {
+                let _ = db::record_field_history(conn, id, "tags", old_val);
+            }
+        }
+        if old.custom_fields != custom_fields {
+            if let Some(ref old_val) = old.custom_fields {
+                let _ = db::record_field_history(conn, id, "custom_fields", old_val);
+            }
+        }
+    }
+
     let name_enc = crypto::encrypt_field(&name, key);
     let username_enc = crypto::encrypt_field(&username, key);
     let password_enc = crypto::encrypt_field(&password, key);
@@ -451,9 +519,19 @@ pub fn delete_entry(
     vault_key: State<'_, VaultKey>,
     id: i64,
 ) -> Result<(), String> {
-    let _ = vault_key.with(|_| ())?;
-    let conn_guard = db.conn.lock().map_err(|e| e.to_string())?;
+    let (conn_guard, key_guard) = (
+        db.conn.lock().map_err(|e| e.to_string())?,
+        vault_key.0.lock().map_err(|e| e.to_string())?,
+    );
     let conn = conn_guard.as_ref().ok_or("No vault is open")?;
+    let key = key_guard.as_ref().ok_or("Vault is locked")?;
+
+    let row = db::fetch_entry(conn, id).ok_or("Entry not found")?;
+    let decrypted = decrypt_entry_row(&row, key)?;
+    let item_name = decrypted.name.clone();
+    let item_data = serde_json::to_string(&decrypted).map_err(|e| e.to_string())?;
+
+    db::add_to_recycle_bin(conn, &item_name, &item_data).map_err(|e| e.to_string())?;
     db::delete_entry(conn, id).map_err(|e| e.to_string())
 }
 
@@ -482,6 +560,169 @@ pub fn reorder_entries(
         let conn = conn_guard.as_ref().ok_or("No vault is open")?;
         db::reorder_entries(conn, &orders).map_err(|e| e.to_string())
     })?
+}
+
+// ─── Field history ───
+
+#[tauri::command]
+pub fn get_field_history(
+    db: State<'_, DbState>,
+    vault_key: State<'_, VaultKey>,
+    entry_id: i64,
+    field_name: String,
+) -> Result<Vec<db::FieldHistoryEntry>, String> {
+    vault_key.with(|_| {
+        let conn_guard = db.conn.lock().map_err(|e| e.to_string())?;
+        let conn = conn_guard.as_ref().ok_or("No vault is open")?;
+        db::get_field_history(conn, entry_id, &field_name).map_err(|e| e.to_string())
+    })?
+}
+
+// ─── Recycle bin ───
+
+#[tauri::command]
+pub fn list_recycle_bin(
+    db: State<'_, DbState>,
+    vault_key: State<'_, VaultKey>,
+) -> Result<Vec<db::RecycleBinItem>, String> {
+    vault_key.with(|_| {
+        let conn_guard = db.conn.lock().map_err(|e| e.to_string())?;
+        let conn = conn_guard.as_ref().ok_or("No vault is open")?;
+        db::list_recycle_bin(conn).map_err(|e| e.to_string())
+    })?
+}
+
+#[tauri::command]
+pub fn remove_custom_field(
+    db: State<'_, DbState>,
+    vault_key: State<'_, VaultKey>,
+    entry_id: i64,
+    key: String,
+    value: String,
+) -> Result<(), String> {
+    vault_key.with(|_| {
+        let conn_guard = db.conn.lock().map_err(|e| e.to_string())?;
+        let conn = conn_guard.as_ref().ok_or("No vault is open")?;
+        db::add_custom_field_to_recycle_bin(conn, entry_id, &key, &value)
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    })?
+}
+
+#[tauri::command]
+pub fn restore_recycle_item(
+    db: State<'_, DbState>,
+    vault_key: State<'_, VaultKey>,
+    bin_id: i64,
+) -> Result<(), String> {
+    let (conn_guard, key_guard) = (
+        db.conn.lock().map_err(|e| e.to_string())?,
+        vault_key.0.lock().map_err(|e| e.to_string())?,
+    );
+    let conn = conn_guard.as_ref().ok_or("No vault is open")?;
+    let key = key_guard.as_ref().ok_or("Vault is locked")?;
+
+    let items = db::list_recycle_bin(conn).map_err(|e| e.to_string())?;
+    let item = items.iter().find(|i| i.id == bin_id).ok_or("Recycle bin item not found")?;
+
+    if item.item_type == "custom_field" {
+        let cf: serde_json::Value = serde_json::from_str(&item.item_data)
+            .map_err(|e| format!("Failed to parse custom field data: {}", e))?;
+        let entry_id = cf["entry_id"].as_i64().ok_or("Missing entry_id")?;
+        let cf_key = cf["key"].as_str().ok_or("Missing key")?.to_string();
+        let cf_value = cf["value"].as_str().ok_or("Missing value")?.to_string();
+
+        let row = db::fetch_entry(conn, entry_id).ok_or("Entry not found")?;
+        let mut entry = decrypt_entry_row(&row, key)?;
+
+        let mut fields: serde_json::Value = entry.custom_fields
+            .as_deref()
+            .and_then(|s| serde_json::from_str(s).ok())
+            .unwrap_or(serde_json::json!({}));
+        if let Some(obj) = fields.as_object_mut() {
+            obj.insert(cf_key, serde_json::Value::String(cf_value));
+        }
+        entry.custom_fields = Some(fields.to_string());
+
+        let name_enc = crypto::encrypt_field(&entry.name, key);
+        let username_enc = crypto::encrypt_field(&entry.username, key);
+        let password_enc = crypto::encrypt_field(&entry.password, key);
+        let url_enc = encrypt_optional(&entry.url, key);
+        let notes_enc = encrypt_optional(&entry.notes, key);
+        let totp_enc = encrypt_optional(&entry.totp, key);
+        let tags_enc = encrypt_optional(&entry.tags, key);
+        let custom_enc = encrypt_optional(&entry.custom_fields, key);
+
+        db::update_entry(
+            conn, entry_id,
+            (&name_enc.1, &name_enc.0),
+            (&username_enc.1, &username_enc.0),
+            (&password_enc.1, &password_enc.0),
+            url_enc.as_ref().map(|(c, n)| (n.as_slice(), c.as_slice())),
+            notes_enc.as_ref().map(|(c, n)| (n.as_slice(), c.as_slice())),
+            totp_enc.as_ref().map(|(c, n)| (n.as_slice(), c.as_slice())),
+            tags_enc.as_ref().map(|(c, n)| (n.as_slice(), c.as_slice())),
+            custom_enc.as_ref().map(|(c, n)| (n.as_slice(), c.as_slice())),
+        ).map_err(|e| e.to_string())?;
+    } else {
+        let entry: DecryptedEntry =
+            serde_json::from_str(&item.item_data).map_err(|e| format!("Failed to parse entry data: {}", e))?;
+
+        let name_enc = crypto::encrypt_field(&entry.name, key);
+        let username_enc = crypto::encrypt_field(&entry.username, key);
+        let password_enc = crypto::encrypt_field(&entry.password, key);
+        let url_enc = encrypt_optional(&entry.url, key);
+        let notes_enc = encrypt_optional(&entry.notes, key);
+        let totp_enc = encrypt_optional(&entry.totp, key);
+        let tags_enc = encrypt_optional(&entry.tags, key);
+        let custom_enc = encrypt_optional(&entry.custom_fields, key);
+
+        db::insert_entry(
+            conn,
+            (&name_enc.1, &name_enc.0),
+            (&username_enc.1, &username_enc.0),
+            (&password_enc.1, &password_enc.0),
+            url_enc.as_ref().map(|(c, n)| (n.as_slice(), c.as_slice())),
+            notes_enc.as_ref().map(|(c, n)| (n.as_slice(), c.as_slice())),
+            totp_enc.as_ref().map(|(c, n)| (n.as_slice(), c.as_slice())),
+            tags_enc.as_ref().map(|(c, n)| (n.as_slice(), c.as_slice())),
+            custom_enc.as_ref().map(|(c, n)| (n.as_slice(), c.as_slice())),
+        ).map_err(|e| e.to_string())?;
+    }
+
+    db::remove_from_recycle_bin(conn, bin_id).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub fn permanently_delete_recycle_item(
+    db: State<'_, DbState>,
+    vault_key: State<'_, VaultKey>,
+    bin_id: i64,
+) -> Result<(), String> {
+    vault_key.with(|_| {
+        let conn_guard = db.conn.lock().map_err(|e| e.to_string())?;
+        let conn = conn_guard.as_ref().ok_or("No vault is open")?;
+        db::remove_from_recycle_bin(conn, bin_id).map_err(|e| e.to_string())
+    })?
+}
+
+#[tauri::command]
+pub fn cleanup_recycle(
+    db: State<'_, DbState>,
+    vault_key: State<'_, VaultKey>,
+) -> Result<usize, String> {
+    vault_key.with(|_| {
+        let conn_guard = db.conn.lock().map_err(|e| e.to_string())?;
+        let conn = conn_guard.as_ref().ok_or("No vault is open")?;
+        db::cleanup_recycle_bin(conn).map_err(|e| e.to_string())
+    })?
+}
+
+#[tauri::command]
+pub fn cleanup_deleted_vaults(meta: State<'_, MetaDb>) -> Result<Vec<String>, String> {
+    let conn = meta.conn.lock().map_err(|e| e.to_string())?;
+    meta_db::cleanup_deleted_vaults(&conn).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
