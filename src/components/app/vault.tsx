@@ -610,7 +610,7 @@ export function Vault() {
                       onToggleReveal={() => toggleShow(selected.id)}
                     />
                     {selected.totp && (
-                      <TotpDisplay entryId={selected.id} index={2} />
+                      <TotpDisplay key={`${selected.id}-${selected.updated_at}`} entryId={selected.id} index={2} />
                     )}
                     {selected.url && (
                       <FieldCard

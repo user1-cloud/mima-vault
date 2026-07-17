@@ -13,7 +13,7 @@ let nextId = 1;
 
 const onPopState = () => {
   if (isProgrammaticBack) {
-    isProgrammaticBack = false;
+    setTimeout(() => { isProgrammaticBack = false; }, 0);
     return;
   }
   if (backStack.length === 0) return;
