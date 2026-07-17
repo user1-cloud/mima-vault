@@ -15,7 +15,6 @@ import {
   History,
   Trash2,
   GripVertical,
-  RotateCcw,
 } from "lucide-react";
 import { WindowControls } from "@/components/app/window-controls";
 import mimaIcon from "@/assets/mima.svg";
@@ -41,6 +40,7 @@ import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { AppSettingsTabs } from "./app-settings";
 import { WaveBackground } from "./wave-background";
 import { VaultCard } from "./vault-card";
+import { RecycleBinTabs } from "./recycle-bin";
 
 function avatarColor(name: string): string {
   const colors = [
@@ -161,10 +161,6 @@ export function VaultList() {
   const [countdown, setCountdown] = useState(5);
   const [vaultSortKey, setVaultSortKey] = useState(() => localStorage.getItem("mima-vault-sort") || "recent");
   useEffect(() => { localStorage.setItem("mima-vault-sort", vaultSortKey); }, [vaultSortKey]);
-  const [deletedVaultsOpen, setDeletedVaultsOpen] = useState(false);
-  const [deletedVaults, setDeletedVaults] = useState<VaultInfo[]>([]);
-  const [deletedVaultsLoading, setDeletedVaultsLoading] = useState(false);
-  const [permDeleteVaultId, setPermDeleteVaultId] = useState<number | null>(null);
 
   const sortedVaults = useMemo(
     () => sortVaults(vaults, vaultSortKey),
@@ -256,30 +252,6 @@ export function VaultList() {
     },
     [deleteVault]
   );
-
-  const openDeletedVaults = useCallback(async () => {
-    setDeletedVaultsOpen(true);
-    setDeletedVaultsLoading(true);
-    try {
-      const items = await useApp.getState().listDeletedVaults();
-      setDeletedVaults(items);
-    } catch {
-      setDeletedVaults([]);
-    } finally {
-      setDeletedVaultsLoading(false);
-    }
-  }, []);
-
-  const handleRestoreVault = useCallback(async (vaultId: number) => {
-    await useApp.getState().restoreVault(vaultId);
-    setDeletedVaults((prev) => prev.filter((v) => v.id !== vaultId));
-  }, []);
-
-  const handlePermDeleteVault = useCallback(async (vaultId: number) => {
-    await useApp.getState().permanentlyDeleteVault(vaultId);
-    setDeletedVaults((prev) => prev.filter((v) => v.id !== vaultId));
-    setPermDeleteVaultId(null);
-  }, []);
 
   const handleUnlock = useCallback(async () => {
     if (unlockingVaultId === null) return;
@@ -694,13 +666,7 @@ export function VaultList() {
               <Plus className="w-4 h-4 mr-2" />
               {t("createVaultBtn")}
             </PrimaryButton>
-            <SecondaryButton
-              className="mx-auto"
-              onClick={openDeletedVaults}
-            >
-              <Trash2 className="w-4 h-4" />
-              {t("deletedVaults")}
-            </SecondaryButton>
+            <RecycleBinTabs availableTabs={["vaults"]} />
             <SecondaryButton
               className="mx-auto"
               onClick={() => setShowAllVaults(false)}
@@ -799,77 +765,6 @@ export function VaultList() {
         </ModalBody>
       </Modal>
 
-      <Modal open={deletedVaultsOpen} onOpenChange={() => { setDeletedVaultsOpen(false); setPermDeleteVaultId(null); }}>
-        <ModalBody>
-          <ModalContent>
-            <h2 className="text-lg font-semibold mb-4">{t("deletedVaults")}</h2>
-            {deletedVaultsLoading ? (
-              <p className="text-sm text-muted-foreground text-center py-4">{t("loading")}</p>
-            ) : deletedVaults.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">{t("recycleBinEmpty")}</p>
-            ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {deletedVaults.map((vault) => {
-                  const deletedDate = vault.deleted_at ? new Date(vault.deleted_at) : new Date();
-                  const daysLeft = 30 - Math.floor((Date.now() - deletedDate.getTime()) / 86400000);
-                  return (
-                    <div key={vault.id} className="rounded-lg border border-border p-3 flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{vault.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {vault.deleted_at}
-                          {daysLeft > 0 && <span className="ml-2 text-muted-foreground/60">{t("daysRemaining", { n: daysLeft })}</span>}
-                        </div>
-                      </div>
-                      <Tooltip content={t("restore")} side="top">
-                        <IconButton className="h-7 w-7" onClick={() => handleRestoreVault(vault.id)}>
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip content={t("permanentlyDelete")} side="top">
-                        <DangerIconButton onClick={() => setPermDeleteVaultId(vault.id)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </DangerIconButton>
-                      </Tooltip>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <div className="flex justify-end mt-4">
-              <SecondaryButton onClick={() => { setDeletedVaultsOpen(false); setPermDeleteVaultId(null); }}>
-                {t("close")}
-              </SecondaryButton>
-            </div>
-          </ModalContent>
-        </ModalBody>
-      </Modal>
-
-      <Modal open={permDeleteVaultId !== null} onOpenChange={() => setPermDeleteVaultId(null)}>
-        <ModalBody>
-          <ModalContent className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center mb-4">
-              <AlertTriangle className="w-6 h-6 text-danger" />
-            </div>
-            <h2 className="text-lg font-semibold mb-2">{t("confirmPermanentlyDelete")}</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              {t("confirmPermanentlyDeleteMessage", {
-                name: deletedVaults.find((v) => v.id === permDeleteVaultId)?.name ?? "",
-              })}
-            </p>
-            <div className="flex gap-3 justify-center">
-              <SecondaryButton onClick={() => setPermDeleteVaultId(null)}>
-                {t("cancel")}
-              </SecondaryButton>
-              <DangerButton
-                onClick={() => permDeleteVaultId !== null && handlePermDeleteVault(permDeleteVaultId)}
-              >
-                {t("permanentlyDelete")}
-              </DangerButton>
-            </div>
-          </ModalContent>
-        </ModalBody>
-      </Modal>
     </div>
   );
 }

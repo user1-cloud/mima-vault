@@ -29,7 +29,6 @@ import {
   Tag,
   GripVertical,
   History,
-  RotateCcw,
 } from "lucide-react";
 
 import { WindowControls } from "@/components/app/window-controls";
@@ -66,6 +65,7 @@ import { Label } from "@/components/ui/label";
 import { EntryDialog } from "./entry-dialog";
 import { VaultSettingsDialog } from "./vault-settings-dialog";
 import { AppSettingsButton } from "./app-settings";
+import { RecycleBinTabs } from "./recycle-bin";
 
 function useDebounce<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -239,10 +239,6 @@ export function Vault() {
   const [historyField, setHistoryField] = useState<{ entryId: number; fieldName: string; fieldLabel: string } | null>(null);
   const [historyEntries, setHistoryEntries] = useState<import("@/stores/app").FieldHistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [recycleOpen, setRecycleOpen] = useState(false);
-  const [recycleItems, setRecycleItems] = useState<import("@/stores/app").RecycleBinItem[]>([]);
-  const [recycleLoading, setRecycleLoading] = useState(false);
-  const [permDeleteId, setPermDeleteId] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [entrySortKey, setEntrySortKey] = useState(() => localStorage.getItem("mima-entry-sort") || "name-asc");
   useEffect(() => { localStorage.setItem("mima-entry-sort", entrySortKey); }, [entrySortKey]);
@@ -341,30 +337,6 @@ export function Vault() {
   const closeHistory = useCallback(() => {
     setHistoryField(null);
     setHistoryEntries([]);
-  }, []);
-
-  const openRecycleBin = useCallback(async () => {
-    setRecycleOpen(true);
-    setRecycleLoading(true);
-    try {
-      const items = await useApp.getState().listRecycleBin();
-      setRecycleItems(items);
-    } catch {
-      setRecycleItems([]);
-    } finally {
-      setRecycleLoading(false);
-    }
-  }, []);
-
-  const handleRestore = useCallback(async (binId: number) => {
-    await useApp.getState().restoreRecycleItem(binId);
-    setRecycleItems((prev) => prev.filter((i) => i.id !== binId));
-  }, []);
-
-  const handlePermDelete = useCallback(async (binId: number) => {
-    await useApp.getState().permanentlyDeleteRecycleItem(binId);
-    setRecycleItems((prev) => prev.filter((i) => i.id !== binId));
-    setPermDeleteId(null);
   }, []);
 
   const handleDelete = useCallback(
@@ -525,11 +497,7 @@ export function Vault() {
                 <Download className="w-4 h-4" />
               </IconButton>
             </Tooltip>
-            <Tooltip content={t("recycleBin")} side="bottom">
-              <IconButton onClick={openRecycleBin}>
-                <Trash2 className="w-4 h-4" />
-              </IconButton>
-            </Tooltip>
+            <RecycleBinTabs availableTabs={["entries", "custom_fields"]} />
             <Tooltip content={t("import")} side="bottom">
               <IconButton
                 onClick={async () => {
@@ -845,91 +813,6 @@ export function Vault() {
               <SecondaryButton onClick={closeHistory}>
                 {t("close")}
               </SecondaryButton>
-            </div>
-          </ModalContent>
-        </ModalBody>
-      </Modal>
-
-      <Modal open={recycleOpen} onOpenChange={() => { setRecycleOpen(false); setPermDeleteId(null); }}>
-        <ModalBody>
-          <ModalContent>
-            <h2 className="text-lg font-semibold mb-4">{t("recycleBin")}</h2>
-            {recycleLoading ? (
-              <p className="text-sm text-muted-foreground text-center py-4">{t("loading")}</p>
-            ) : recycleItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">{t("recycleBinEmpty")}</p>
-            ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {recycleItems.map((item) => {
-                  const deletedDate = new Date(item.deleted_at);
-                  const daysLeft = 30 - Math.floor((Date.now() - deletedDate.getTime()) / 86400000);
-                  const isCustomField = item.item_type === "custom_field";
-                  let displayName = item.item_name;
-                  let displayValue = "";
-                  if (isCustomField) {
-                    try {
-                      const cf = JSON.parse(item.item_data);
-                      displayName = `${t("customFields")}: ${cf.key}`;
-                      displayValue = cf.value ?? "";
-                    } catch { /* fallback to item_name */ }
-                  }
-                  return (
-                    <div key={item.id} className="rounded-lg border border-border p-3 flex items-center gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate">{displayName}</div>
-                        {isCustomField && displayValue && (
-                          <div className="text-xs text-muted-foreground truncate">{displayValue}</div>
-                        )}
-                        <div className="text-xs text-muted-foreground">
-                          {item.deleted_at}
-                          {daysLeft > 0 && <span className="ml-2 text-muted-foreground/60">{t("daysRemaining", { n: daysLeft })}</span>}
-                        </div>
-                      </div>
-                      <Tooltip content={t("restore")} side="top">
-                        <IconButton className="h-7 w-7" onClick={() => handleRestore(item.id)}>
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip content={t("permanentlyDelete")} side="top">
-                        <DangerIconButton onClick={() => setPermDeleteId(item.id)}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </DangerIconButton>
-                      </Tooltip>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            <div className="flex justify-end mt-4">
-              <SecondaryButton onClick={() => { setRecycleOpen(false); setPermDeleteId(null); }}>
-                {t("close")}
-              </SecondaryButton>
-            </div>
-          </ModalContent>
-        </ModalBody>
-      </Modal>
-
-      <Modal open={permDeleteId !== null} onOpenChange={() => setPermDeleteId(null)}>
-        <ModalBody>
-          <ModalContent className="text-center">
-            <div className="mx-auto w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center mb-4">
-              <AlertTriangle className="w-6 h-6 text-danger" />
-            </div>
-            <h2 className="text-lg font-semibold mb-2">{t("confirmPermanentlyDelete")}</h2>
-            <p className="text-sm text-muted-foreground mb-4">
-              {t("confirmPermanentlyDeleteMessage", {
-                name: recycleItems.find((i) => i.id === permDeleteId)?.item_name ?? "",
-              })}
-            </p>
-            <div className="flex gap-3 justify-center">
-              <SecondaryButton onClick={() => setPermDeleteId(null)}>
-                {t("cancel")}
-              </SecondaryButton>
-              <DangerButton
-                onClick={() => permDeleteId !== null && handlePermDelete(permDeleteId)}
-              >
-                {t("permanentlyDelete")}
-              </DangerButton>
             </div>
           </ModalContent>
         </ModalBody>
