@@ -65,7 +65,7 @@ import { Label } from "@/components/ui/label";
 import { EntryDialog } from "./entry-dialog";
 import { VaultSettingsDialog } from "./vault-settings-dialog";
 import { AppSettingsButton } from "./app-settings";
-import { RecycleBinTabs } from "./recycle-bin";
+import { RecycleBinButton } from "./recycle-bin";
 
 function useDebounce<T>(value: T, ms: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -497,7 +497,7 @@ export function Vault() {
                 <Download className="w-4 h-4" />
               </IconButton>
             </Tooltip>
-            <RecycleBinTabs availableTabs={["entries", "custom_fields"]} />
+            <RecycleBinButton availableTabs={["entries", "custom_fields"]} initialTab="entries" title={`${activeVault?.name ?? ""} ${t("recycleBin")}`} />
             <Tooltip content={t("import")} side="bottom">
               <IconButton
                 onClick={async () => {

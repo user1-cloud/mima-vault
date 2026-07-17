@@ -40,7 +40,7 @@ import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
 import { AppSettingsTabs } from "./app-settings";
 import { WaveBackground } from "./wave-background";
 import { VaultCard } from "./vault-card";
-import { RecycleBinTabs } from "./recycle-bin";
+import { RecycleBinButton } from "./recycle-bin";
 
 function avatarColor(name: string): string {
   const colors = [
@@ -666,7 +666,7 @@ export function VaultList() {
               <Plus className="w-4 h-4 mr-2" />
               {t("createVaultBtn")}
             </PrimaryButton>
-            <RecycleBinTabs availableTabs={["vaults"]} />
+            <RecycleBinButton availableTabs={["vaults"]} />
             <SecondaryButton
               className="mx-auto"
               onClick={() => setShowAllVaults(false)}
