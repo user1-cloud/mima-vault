@@ -155,6 +155,7 @@ const en: Translations = {
   customFieldValue: "Value",
   addCustomField: "Add custom field",
   removeCustomField: "Remove custom field",
+  entries: "Entries",
   confirmRemoveCustomField: "Remove custom field \"{name}\"?",
   fieldHistory: "Field History",
   noHistory: "No history available",

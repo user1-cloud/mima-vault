@@ -153,6 +153,7 @@ const zh = {
   customFieldValue: "值",
   addCustomField: "添加自定义字段",
   removeCustomField: "删除自定义字段",
+  entries: "条目",
   confirmRemoveCustomField: "确定要删除自定义字段「{name}」吗？",
   fieldHistory: "字段历史",
   noHistory: "暂无历史记录",
