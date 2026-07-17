@@ -342,7 +342,7 @@ export function SortableCardList<T extends { id: number }>({
               ) : (
                 filteredVisible.map((item) => (
                   <motion.div
-                    key={item.id}
+                    key={`${displayMode}-${item.id}`}
                     variants={cardVariants}
                     initial="hidden"
                     animate="visible"

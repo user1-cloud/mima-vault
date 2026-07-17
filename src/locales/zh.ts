@@ -152,6 +152,8 @@ const zh = {
   customFieldKey: "键",
   customFieldValue: "值",
   addCustomField: "添加自定义字段",
+  removeCustomField: "删除自定义字段",
+  confirmRemoveCustomField: "确定要删除自定义字段「{name}」吗？",
 };
 
 export type Translations = typeof zh;

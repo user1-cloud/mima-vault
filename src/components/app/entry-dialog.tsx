@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Loader2, ScanLine, Plus, X } from "lucide-react";
+import { Wand2, Loader2, ScanLine, Plus, X, AlertTriangle } from "lucide-react";
 import jsQR from "jsqr";
 import { useApp, type Entry } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
@@ -12,6 +12,7 @@ import { useBackLayer } from "@/lib/history-back";
 import { IconButton } from "@/components/ui/icon-button";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { SecondaryButton } from "@/components/ui/secondary-button";
+import { DangerButton } from "@/components/ui/danger-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
@@ -63,6 +64,7 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
   const [generating, setGenerating] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [confirmRemoveIndex, setConfirmRemoveIndex] = useState<number | null>(null);
 
   const {
     register,
@@ -423,7 +425,7 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
                   </div>
                   <IconButton
                     type="button"
-                    onClick={() => removeCustomField(i)}
+                    onClick={() => setConfirmRemoveIndex(i)}
                     className="h-9 w-9 shrink-0"
                   >
                     <X className="w-3.5 h-3.5" />
@@ -443,6 +445,37 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
             </PrimaryButton>
           </div>
         </form>
+
+        <Modal open={confirmRemoveIndex !== null} onOpenChange={() => setConfirmRemoveIndex(null)}>
+          <ModalBody>
+            <ModalContent className="text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center mb-4">
+                <AlertTriangle className="w-6 h-6 text-danger" />
+              </div>
+              <h2 className="text-lg font-semibold mb-2">{t("removeCustomField")}</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                {t("confirmRemoveCustomField", {
+                  name: confirmRemoveIndex !== null ? (customFields[confirmRemoveIndex]?.key || "") : "",
+                })}
+              </p>
+              <div className="flex gap-3 justify-center">
+                <SecondaryButton onClick={() => setConfirmRemoveIndex(null)}>
+                  {t("cancel")}
+                </SecondaryButton>
+                <DangerButton
+                  onClick={() => {
+                    if (confirmRemoveIndex !== null) {
+                      removeCustomField(confirmRemoveIndex);
+                      setConfirmRemoveIndex(null);
+                    }
+                  }}
+                >
+                  {t("removeCustomField")}
+                </DangerButton>
+              </div>
+            </ModalContent>
+          </ModalBody>
+        </Modal>
       </ModalContent>
     </ModalBody>
   );

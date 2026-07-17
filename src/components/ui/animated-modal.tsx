@@ -108,14 +108,19 @@ export const ModalBody = ({
       setShow(true);
       document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = "auto";
+      if (modalOpenCount.current === 0) {
+        document.body.style.overflow = "auto";
+      }
       setShow(false);
     }
   }, [open]);
 
   const modalRef = useRef<HTMLDivElement>(null!);
   const { setOpen } = useModal();
-  useOutsideClick(modalRef, () => setOpen(false));
+  useOutsideClick(modalRef, () => {
+    if (modalOpenCount.current > 1) return;
+    setOpen(false);
+  });
 
   return createPortal(
     <AnimatePresence onExitComplete={() => {}}>

@@ -154,6 +154,8 @@ const en: Translations = {
   customFieldKey: "Key",
   customFieldValue: "Value",
   addCustomField: "Add custom field",
+  removeCustomField: "Remove custom field",
+  confirmRemoveCustomField: "Remove custom field \"{name}\"?",
 };
 
 export default en;
