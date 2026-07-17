@@ -88,6 +88,7 @@ const zh = {
   invalidFileFormat: "无效的文件格式",
   wrongBackupPassword: "备份密码错误",
   backupPassword: "备份密码",
+  confirmBackupPassword: "确认备份密码",
   enterBackupPassword: "输入备份加密密码",
   encryptedExportTitle: "导出加密备份",
   appSettings: "设置",
@@ -147,6 +148,10 @@ const zh = {
   colorOrange: "橙色",
   colorPink: "粉色",
   colorTeal: "青色",
+  customFields: "自定义字段",
+  customFieldKey: "键",
+  customFieldValue: "值",
+  addCustomField: "添加自定义字段",
 };
 
 export type Translations = typeof zh;

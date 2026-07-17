@@ -59,6 +59,7 @@ import { ListCardIcon, ListCardContent } from "./list-card";
 import { SortableCardList, type SortOption } from "./sortable-card-list";
 
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { EntryDialog } from "./entry-dialog";
 import { VaultSettingsDialog } from "./vault-settings-dialog";
@@ -242,6 +243,7 @@ export function Vault() {
   const [exportPwOpen, setExportPwOpen] = useState(false);
   const [exportPendingPath, setExportPendingPath] = useState<string | null>(null);
   const [exportPw, setExportPw] = useState("");
+  const [exportPwConfirm, setExportPwConfirm] = useState("");
   const [exportPwError, setExportPwError] = useState("");
 
   const [importPwOpen, setImportPwOpen] = useState(false);
@@ -290,6 +292,7 @@ export function Vault() {
   const closeExportPw = useCallback(() => {
     setExportPwOpen(false);
     setExportPw("");
+    setExportPwConfirm("");
     setExportPwError("");
   }, []);
 
@@ -633,6 +636,26 @@ export function Vault() {
                         onCopy={() => handleCopy(selected.notes!, `notes-${selected.id}`)}
                       />
                     )}
+                    {selected.custom_fields &&
+                      (() => {
+                        try {
+                          const cf = JSON.parse(selected.custom_fields);
+                          if (typeof cf !== "object" || cf === null || Array.isArray(cf)) return null;
+                          return Object.entries(cf).map(([k, v], i) => (
+                            <FieldCard
+                              key={`cf-${selected.id}-${k}`}
+                              index={5 + i}
+                              icon={<Tag className="w-4 h-4" />}
+                              label={String(k)}
+                              value={String(v)}
+                              copied={copiedField === `cf-${selected.id}-${k}`}
+                              onCopy={() => handleCopy(String(v), `cf-${selected.id}-${k}`)}
+                            />
+                          ));
+                        } catch {
+                          return null;
+                        }
+                      })()}
                   </div>
 
                   <div className="h-12" />
@@ -754,6 +777,7 @@ export function Vault() {
                   if (p) {
                     setExportPendingPath(p);
                     setExportPw("");
+                    setExportPwConfirm("");
                     setExportPwError("");
                     setExportPwOpen(true);
                   }
@@ -789,27 +813,43 @@ export function Vault() {
                 {exportPwError}
               </motion.div>
             )}
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="export-password">{t("backupPassword")}</Label>
-              <Input
-                id="export-password"
-                type="password"
-                value={exportPw}
-                onChange={(e) => setExportPw(e.target.value)}
-                placeholder={t("enterBackupPassword")}
-                autoComplete="new-password"
-                className="font-mono"
-                autoFocus
-              />
+            <div className="space-y-4 mb-4">
+              <div className="space-y-2">
+                <Label htmlFor="export-password">{t("backupPassword")}</Label>
+                <PasswordInput
+                  id="export-password"
+                  value={exportPw}
+                  onChange={(e) => setExportPw(e.target.value)}
+                  placeholder={t("enterBackupPassword")}
+                  autoComplete="new-password"
+                  className="font-mono"
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="export-confirm">{t("confirmBackupPassword")}</Label>
+                <PasswordInput
+                  id="export-confirm"
+                  value={exportPwConfirm}
+                  onChange={(e) => setExportPwConfirm(e.target.value)}
+                  placeholder={t("enterBackupPassword")}
+                  autoComplete="new-password"
+                  className="font-mono"
+                />
+              </div>
             </div>
             <div className="flex gap-3 justify-end">
               <SecondaryButton onClick={closeExportPw}>
                 {t("cancel")}
               </SecondaryButton>
               <PrimaryButton
-                disabled={!exportPw}
+                disabled={!exportPw || !exportPwConfirm}
                 onClick={async () => {
                   if (!exportPendingPath) return;
+                  if (exportPw !== exportPwConfirm) {
+                    setExportPwError(t("passwordsDontMatch"));
+                    return;
+                  }
                   try {
                     await useApp.getState().exportEncryptedBackup(exportPendingPath, exportPw);
                     closeExportPw();
@@ -840,9 +880,8 @@ export function Vault() {
             )}
             <div className="space-y-2 mb-4">
               <Label htmlFor="import-password">{t("backupPassword")}</Label>
-              <Input
+              <PasswordInput
                 id="import-password"
-                type="password"
                 value={importPw}
                 onChange={(e) => setImportPw(e.target.value)}
                 placeholder={t("enterBackupPassword")}

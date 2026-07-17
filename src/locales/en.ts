@@ -90,6 +90,7 @@ const en: Translations = {
   invalidFileFormat: "Invalid file format",
   wrongBackupPassword: "Incorrect backup password",
   backupPassword: "Backup Password",
+  confirmBackupPassword: "Confirm backup password",
   enterBackupPassword: "Enter backup encryption password",
   encryptedExportTitle: "Export Encrypted Backup",
   appSettings: "Settings",
@@ -149,6 +150,10 @@ const en: Translations = {
   colorOrange: "Orange",
   colorPink: "Pink",
   colorTeal: "Teal",
+  customFields: "Custom Fields",
+  customFieldKey: "Key",
+  customFieldValue: "Value",
+  addCustomField: "Add custom field",
 };
 
 export default en;

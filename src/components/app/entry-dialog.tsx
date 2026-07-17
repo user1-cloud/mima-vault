@@ -1,9 +1,9 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, type FormEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Wand2, Eye, EyeOff, Loader2, ScanLine } from "lucide-react";
+import { Wand2, Loader2, ScanLine, Plus, X } from "lucide-react";
 import jsQR from "jsqr";
 import { useApp, type Entry } from "@/stores/app";
 import { useLocale } from "@/stores/locale";
@@ -14,6 +14,7 @@ import { PrimaryButton } from "@/components/ui/primary-button";
 import { SecondaryButton } from "@/components/ui/secondary-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import {
   Modal,
@@ -50,16 +51,18 @@ export function EntryDialog({ open, onOpenChange, entry }: Props) {
   );
 }
 
+type CustomField = { key: string; value: string };
+
 function EntryDialogInner({ open, onOpenChange, entry }: Props) {
   const { createEntry, updateEntry, generatePassword } = useApp();
   const { open: isOpen, setOpen } = useModal();
 
   useLocale();
 
-  const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
 
   const {
     register,
@@ -94,10 +97,26 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
           totp: entry.totp ?? "",
           tags: entry.tags ?? "",
         });
+        if (entry.custom_fields) {
+          try {
+            const parsed = JSON.parse(entry.custom_fields);
+            if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
+              setCustomFields(
+                Object.entries(parsed).map(([k, v]) => ({ key: k, value: String(v) }))
+              );
+            } else {
+              setCustomFields([]);
+            }
+          } catch {
+            setCustomFields([]);
+          }
+        } else {
+          setCustomFields([]);
+        }
       } else {
         reset({ name: "", username: "", password: "", url: "", notes: "", totp: "", tags: "" });
+        setCustomFields([]);
       }
-      setShowPassword(false);
     }
   }, [open, entry, reset]);
 
@@ -141,6 +160,23 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
     }
   }, [setValue]);
 
+  const addCustomField = useCallback(() => {
+    setCustomFields((prev) => [...prev, { key: "", value: "" }]);
+  }, []);
+
+  const removeCustomField = useCallback((index: number) => {
+    setCustomFields((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const updateCustomField = useCallback(
+    (index: number, field: "key" | "value", val: string) => {
+      setCustomFields((prev) =>
+        prev.map((cf, i) => (i === index ? { ...cf, [field]: val } : cf))
+      );
+    },
+    []
+  );
+
   const close = useCallback(() => {
     setOpen(false);
     onOpenChange(false);
@@ -150,12 +186,20 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
     async (data: FormData) => {
       setSaving(true);
       try {
+        const filledFields = customFields.filter((cf) => cf.key.trim() !== "");
+        const customFieldsJson =
+          filledFields.length > 0
+            ? JSON.stringify(
+                Object.fromEntries(filledFields.map((cf) => [cf.key.trim(), cf.value]))
+              )
+            : null;
         const payload = {
           ...data,
           url: data.url || null,
           notes: data.notes || null,
           totp: data.totp ? data.totp.replace(/[^A-Za-z2-7=]/g, "").toUpperCase() : null,
           tags: data.tags || null,
+          custom_fields: customFieldsJson,
         };
         if (entry) {
           await updateEntry(entry.id, payload);
@@ -167,7 +211,7 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
         setSaving(false);
       }
     },
-    [entry, createEntry, updateEntry, close]
+    [entry, createEntry, updateEntry, close, customFields]
   );
 
   const passwordValue = watch("password");
@@ -235,26 +279,13 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
           <div className="space-y-2">
             <Label htmlFor="password">{t("password")}</Label>
             <div className="flex gap-2">
-              <div className="relative flex-1 group">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  {...register("password")}
-                  placeholder={t("passwordPlaceholder")}
-                  className="pr-10 font-mono transition-shadow duration-300 focus:shadow-[0_0_15px_-3px_oklch(0.65_0.2_250/0.3)]"
-                />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <Tooltip content={showPassword ? t("hide") : t("show")} side="top">
-                    <IconButton
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="h-7 w-7"
-                    >
-                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    </IconButton>
-                  </Tooltip>
-                </div>
-              </div>
+              <PasswordInput
+                id="password"
+                {...register("password")}
+                placeholder={t("passwordPlaceholder")}
+                className="font-mono transition-shadow duration-300 focus:shadow-[0_0_15px_-3px_oklch(0.65_0.2_250/0.3)]"
+                wrapperClassName="flex-1"
+              />
               <Tooltip content={t("generatePassword")} side="bottom">
                 <IconButton
                   type="button"
@@ -352,6 +383,54 @@ function EntryDialogInner({ open, onOpenChange, entry }: Props) {
               placeholder={t("tagsPlaceholder")}
               className="transition-shadow duration-300 focus:shadow-[0_0_15px_-3px_oklch(0.65_0.2_250/0.3)]"
             />
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>{t("customFields")} ({t("optional")})</Label>
+              <button
+                type="button"
+                onClick={addCustomField}
+                className="inline-flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                {t("addCustomField")}
+              </button>
+            </div>
+            <AnimatePresence>
+              {customFields.map((cf, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex gap-2 items-start"
+                >
+                  <div className="flex-1 flex gap-2">
+                    <Input
+                      placeholder={t("customFieldKey")}
+                      value={cf.key}
+                      onChange={(e) => updateCustomField(i, "key", e.target.value)}
+                      className="flex-1"
+                    />
+                    <Input
+                      placeholder={t("customFieldValue")}
+                      value={cf.value}
+                      onChange={(e) => updateCustomField(i, "value", e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                  <IconButton
+                    type="button"
+                    onClick={() => removeCustomField(i)}
+                    className="h-9 w-9 shrink-0"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </IconButton>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
 
           <div className="flex gap-3 justify-end pt-2">

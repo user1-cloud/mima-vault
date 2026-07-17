@@ -17,6 +17,7 @@ export interface Entry {
   notes: string | null;
   totp: string | null;
   tags: string | null;
+  custom_fields: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -40,6 +41,7 @@ export interface ExportEntry {
   notes: string | null;
   totp: string | null;
   tags: string | null;
+  custom_fields: string | null;
 }
 
 export interface TotpCode {
@@ -192,13 +194,15 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   createEntry: async (data) => {
-    const id = await invoke<number>("create_entry", { ...data });
+    const { custom_fields, ...rest } = data;
+    const id = await invoke<number>("create_entry", { ...rest, customFields: custom_fields });
     await get().loadEntries();
     set({ selectedId: id });
   },
 
   updateEntry: async (id, data) => {
-    await invoke("update_entry", { id, ...data });
+    const { custom_fields, ...rest } = data;
+    await invoke("update_entry", { id, ...rest, customFields: custom_fields });
     await get().loadEntries();
   },
 

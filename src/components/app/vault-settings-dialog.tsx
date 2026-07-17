@@ -5,6 +5,7 @@ import { useLocale } from "@/stores/locale";
 import { t } from "@/lib/i18n";
 import { useBackLayer } from "@/lib/history-back";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { PrimaryButton } from "@/components/ui/primary-button";
 import { SecondaryButton } from "@/components/ui/secondary-button";
 import { Modal, ModalBody, ModalContent } from "@/components/ui/animated-modal";
@@ -121,8 +122,7 @@ export function VaultSettingsDialog({ open, onOpenChange }: Props) {
                     </PrimaryButton>
                   ) : (
                     <div className="space-y-2">
-                      <Input
-                        type="password"
+                      <PasswordInput
                         value={bioPassword}
                         onChange={(e) => setBioPassword(e.target.value)}
                         placeholder={t("enterPasswordToEnable")}

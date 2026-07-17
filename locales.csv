@@ -88,6 +88,7 @@ importError,导入失败,Import failed,匯入失敗,匯入失敗,インポート
 invalidFileFormat,无效的文件格式,Invalid file format,無效檔案格式,無效檔案格式,ファイル形式が不正です,잘못된 파일 형식,Ungültiges Dateiformat,Formato de archivo no válido,Format de fichier invalide,Неверный формат файла,Formato de arquivo inválido,Formato file non valido
 wrongBackupPassword,备份密码错误,Incorrect backup password,備份密碼錯誤,備份密碼錯誤,バックアップパスワードが間違っています,백업 비밀번호가 틀렸습니다,Falsches Sicherungspasswort,Contraseña de copia de seguridad incorrecta,Mot de passe de sauvegarde incorrect,Неверный пароль резервной копии,Senha de backup incorreta,Password di backup errata
 backupPassword,备份密码,Backup Password,備份密碼,備份密碼,バックアップパスワード,백업 비밀번호,Sicherungspasswort,Contraseña de copia de seguridad,Mot de passe de sauvegarde,Пароль резервной копии,Senha de backup,Password di backup
+confirmBackupPassword,确认备份密码,Confirm backup password,,,,,,,,,,
 enterBackupPassword,输入备份加密密码,Enter backup encryption password,輸入備份加密密碼,輸入備份加密密碼,バックアップ暗号化パスワードを入力,백업 암호화 비밀번호를 입력하세요,Geben Sie das Verschlüsselungspasswort der Sicherung ein,Ingresa la contraseña de cifrado de copia de seguridad,Saisissez le mot de passe de chiffrement de la sauvegarde,Введите пароль шифрования резервной копии,Digite a senha de criptografia do backup,Inserisci la password di crittografia del backup
 encryptedExportTitle,导出加密备份,Export Encrypted Backup,匯出加密備份,匯出加密備份,暗号化バックアップをエクスポート,암호화된 백업 내보내기,Verschlüsselte Sicherung exportieren,Exportar copia de seguridad cifrada,Exporter une sauvegarde chiffrée,Экспортировать зашифрованную резервную копию,Exportar backup criptografado,Esporta backup crittografato
 appSettings,设置,Settings,設定,設定,設定,설정,Einstellungen,Configuración,Paramètres,Настройки,Configurações,Impostazioni
@@ -147,3 +148,7 @@ colorRed,红色,Red,紅色,紅色,赤,빨간색,Rot,Rojo,Rouge,Красный,Ve
 colorOrange,橙色,Orange,橙色,橙色,オレンジ,주황색,Orange,Naranja,Orange,Оранжевый,Laranja,Arancione
 colorPink,粉色,Pink,粉紅色,粉紅色,ピンク,분홍색,Rosa,Rosa,Rose,Розовый,Rosa,Rosa
 colorTeal,青色,Teal,青綠色,藍綠色,ティール,청록색,Türkis,Turquesa,Turquoise,Бирюзовый,Turquesa,Turchese
+customFields,自定义字段,Custom Fields,,,,,,,,,,
+customFieldKey,键,Key,,,,,,,,,,
+customFieldValue,值,Value,,,,,,,,,,
+addCustomField,添加自定义字段,Add custom field,,,,,,,,,,

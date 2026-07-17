@@ -228,6 +228,7 @@ pub struct ExportEntry {
     pub notes: Option<String>,
     pub totp: Option<String>,
     pub tags: Option<String>,
+    pub custom_fields: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -240,6 +241,7 @@ pub struct DecryptedEntry {
     pub notes: Option<String>,
     pub totp: Option<String>,
     pub tags: Option<String>,
+    pub custom_fields: Option<String>,
     pub sort_order: f64,
     pub created_at: String,
     pub updated_at: String,
@@ -286,6 +288,11 @@ fn decrypt_entry_row(row: &db::EntryRow, key: &[u8; 32]) -> Result<DecryptedEntr
             .tags_cipher
             .as_ref()
             .zip(row.tags_nonce.as_ref())
+            .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
+        custom_fields: row
+            .custom_cipher
+            .as_ref()
+            .zip(row.custom_nonce.as_ref())
             .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
         sort_order: row.sort_order,
         created_at: row.created_at.clone(),
@@ -341,6 +348,7 @@ pub fn create_entry(
     notes: Option<String>,
     totp: Option<String>,
     tags: Option<String>,
+    custom_fields: Option<String>,
 ) -> Result<i64, String> {
     let (conn_guard, key_guard) = (
         db.conn.lock().map_err(|e| e.to_string())?,
@@ -356,6 +364,7 @@ pub fn create_entry(
     let notes_enc = encrypt_optional(&notes, key);
     let totp_enc = encrypt_optional(&totp, key);
     let tags_enc = encrypt_optional(&tags, key);
+    let custom_enc = encrypt_optional(&custom_fields, key);
 
     db::insert_entry(
         conn,
@@ -374,6 +383,9 @@ pub fn create_entry(
         tags_enc
             .as_ref()
             .map(|(c, n)| (n.as_slice(), c.as_slice())),
+        custom_enc
+            .as_ref()
+            .map(|(c, n)| (n.as_slice(), c.as_slice())),
     )
     .map_err(|e| e.to_string())
 }
@@ -390,6 +402,7 @@ pub fn update_entry(
     notes: Option<String>,
     totp: Option<String>,
     tags: Option<String>,
+    custom_fields: Option<String>,
 ) -> Result<(), String> {
     let (conn_guard, key_guard) = (
         db.conn.lock().map_err(|e| e.to_string())?,
@@ -405,6 +418,7 @@ pub fn update_entry(
     let notes_enc = encrypt_optional(&notes, key);
     let totp_enc = encrypt_optional(&totp, key);
     let tags_enc = encrypt_optional(&tags, key);
+    let custom_enc = encrypt_optional(&custom_fields, key);
 
     db::update_entry(
         conn,
@@ -422,6 +436,9 @@ pub fn update_entry(
             .as_ref()
             .map(|(c, n)| (n.as_slice(), c.as_slice())),
         tags_enc
+            .as_ref()
+            .map(|(c, n)| (n.as_slice(), c.as_slice())),
+        custom_enc
             .as_ref()
             .map(|(c, n)| (n.as_slice(), c.as_slice())),
     )
@@ -601,6 +618,11 @@ pub fn export_plaintext(
                     .as_ref()
                     .zip(row.tags_nonce.as_ref())
                     .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
+                custom_fields: row
+                    .custom_cipher
+                    .as_ref()
+                    .zip(row.custom_nonce.as_ref())
+                    .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
             })
         })
         .collect();
@@ -677,6 +699,11 @@ pub fn export_encrypted(
                     .tags_cipher
                     .as_ref()
                     .zip(row.tags_nonce.as_ref())
+                    .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
+                custom_fields: row
+                    .custom_cipher
+                    .as_ref()
+                    .zip(row.custom_nonce.as_ref())
                     .and_then(|(c, n)| crypto::decrypt_field(c, n, key)),
             })
         })
@@ -758,6 +785,7 @@ pub fn confirm_import(
         let notes_enc = encrypt_optional(&entry.notes, key);
         let totp_enc = encrypt_optional(&entry.totp, key);
         let tags_enc = encrypt_optional(&entry.tags, key);
+        let custom_enc = encrypt_optional(&entry.custom_fields, key);
 
         db::insert_entry(
             conn,
@@ -774,6 +802,9 @@ pub fn confirm_import(
                 .as_ref()
                 .map(|(c, n)| (n.as_slice(), c.as_slice())),
             tags_enc
+                .as_ref()
+                .map(|(c, n)| (n.as_slice(), c.as_slice())),
+            custom_enc
                 .as_ref()
                 .map(|(c, n)| (n.as_slice(), c.as_slice())),
         )
@@ -838,6 +869,7 @@ pub fn confirm_encrypted_import(
         let notes_enc = encrypt_optional(&entry.notes, key);
         let totp_enc = encrypt_optional(&entry.totp, key);
         let tags_enc = encrypt_optional(&entry.tags, key);
+        let custom_enc = encrypt_optional(&entry.custom_fields, key);
 
         db::insert_entry(
             conn,
@@ -854,6 +886,9 @@ pub fn confirm_encrypted_import(
                 .as_ref()
                 .map(|(c, n)| (n.as_slice(), c.as_slice())),
             tags_enc
+                .as_ref()
+                .map(|(c, n)| (n.as_slice(), c.as_slice())),
+            custom_enc
                 .as_ref()
                 .map(|(c, n)| (n.as_slice(), c.as_slice())),
         )

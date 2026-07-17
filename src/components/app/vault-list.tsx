@@ -7,8 +7,6 @@ import {
   Plus,
   Loader2,
   AlertTriangle,
-  Eye,
-  EyeOff,
   Fingerprint,
   ArrowLeft,
   ArrowUpAZ,
@@ -31,6 +29,7 @@ import { SecondaryButton } from "@/components/ui/secondary-button";
 import { DangerButton } from "@/components/ui/danger-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { SortableCardList, type SortOption } from "./sortable-card-list";
 import { ListCardIcon, ListCardContent } from "./list-card";
@@ -151,7 +150,6 @@ export function VaultList() {
   const [creating, setCreating] = useState(false);
   const [unlockingVaultId, setUnlockingVaultId] = useState<number | null>(null);
   const [unlockPassword, setUnlockPassword] = useState("");
-  const [unlockShowPassword, setUnlockShowPassword] = useState(false);
   const [unlockError, setUnlockError] = useState("");
   const [unlockLoading, setUnlockLoading] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
@@ -362,29 +360,15 @@ export function VaultList() {
               >
                 <div className="space-y-2">
                   <Label htmlFor="master-password">{t("masterPassword")}</Label>
-                  <div className="relative group">
-                    <Input
-                      id="master-password"
-                      type={unlockShowPassword ? "text" : "password"}
-                      value={unlockPassword}
-                      onChange={(e) => setUnlockPassword(e.target.value)}
-                      placeholder={t("enterMasterPassword")}
-                      autoComplete="off"
-                      className="pr-10 font-mono transition-shadow duration-300 focus:shadow-[0_0_20px_-3px_oklch(0.65_0.2_250/0.3)]"
-                      autoFocus
-                    />
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <Tooltip content={unlockShowPassword ? t("hide") : t("show")} side="top">
-                        <IconButton
-                          type="button"
-                          onClick={() => setUnlockShowPassword(!unlockShowPassword)}
-                          className="h-7 w-7"
-                        >
-                          {unlockShowPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </IconButton>
-                      </Tooltip>
-                    </div>
-                  </div>
+                  <PasswordInput
+                    id="master-password"
+                    value={unlockPassword}
+                    onChange={(e) => setUnlockPassword(e.target.value)}
+                    placeholder={t("enterMasterPassword")}
+                    autoComplete="off"
+                    className="font-mono transition-shadow duration-300 focus:shadow-[0_0_20px_-3px_oklch(0.65_0.2_250/0.3)]"
+                    autoFocus
+                  />
                 </div>
 
                 <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
@@ -536,9 +520,8 @@ export function VaultList() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="master-password">{t("masterPassword")}</Label>
-                <Input
+                <PasswordInput
                   id="master-password"
-                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t("enterMasterPassword")}
@@ -548,9 +531,8 @@ export function VaultList() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm-password">{t("confirmPassword")}</Label>
-                <Input
+                <PasswordInput
                   id="confirm-password"
-                  type="password"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   placeholder={t("confirmMasterPassword")}
