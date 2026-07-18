@@ -88,7 +88,7 @@ importError,导入失败,Import failed,匯入失敗,匯入失敗,インポート
 invalidFileFormat,无效的文件格式,Invalid file format,無效檔案格式,無效檔案格式,ファイル形式が不正です,잘못된 파일 형식,Ungültiges Dateiformat,Formato de archivo no válido,Format de fichier invalide,Неверный формат файла,Formato de arquivo inválido,Formato file non valido
 wrongBackupPassword,备份密码错误,Incorrect backup password,備份密碼錯誤,備份密碼錯誤,バックアップパスワードが間違っています,백업 비밀번호가 틀렸습니다,Falsches Sicherungspasswort,Contraseña de copia de seguridad incorrecta,Mot de passe de sauvegarde incorrect,Неверный пароль резервной копии,Senha de backup incorreta,Password di backup errata
 backupPassword,备份密码,Backup Password,備份密碼,備份密碼,バックアップパスワード,백업 비밀번호,Sicherungspasswort,Contraseña de copia de seguridad,Mot de passe de sauvegarde,Пароль резервной копии,Senha de backup,Password di backup
-confirmBackupPassword,确认备份密码,Confirm backup password,,,,,,,,,,
+confirmBackupPassword,确认备份密码,Confirm backup password,確認備份密碼,確認備份密碼,バックアップパスワードを確認する,백업 비밀번호 확인,Backup-Passwort bestätigen,Confirmar la contraseña de copia de seguridad,Confirmer le mot de passe de sauvegarde,Подтвердите пароль резервной копии,Confirme a senha de backup,Conferma la password di backup
 enterBackupPassword,输入备份加密密码,Enter backup encryption password,輸入備份加密密碼,輸入備份加密密碼,バックアップ暗号化パスワードを入力,백업 암호화 비밀번호를 입력하세요,Geben Sie das Verschlüsselungspasswort der Sicherung ein,Ingresa la contraseña de cifrado de copia de seguridad,Saisissez le mot de passe de chiffrement de la sauvegarde,Введите пароль шифрования резервной копии,Digite a senha de criptografia do backup,Inserisci la password di crittografia del backup
 encryptedExportTitle,导出加密备份,Export Encrypted Backup,匯出加密備份,匯出加密備份,暗号化バックアップをエクスポート,암호화된 백업 내보내기,Verschlüsselte Sicherung exportieren,Exportar copia de seguridad cifrada,Exporter une sauvegarde chiffrée,Экспортировать зашифрованную резервную копию,Exportar backup criptografado,Esporta backup crittografato
 appSettings,设置,Settings,設定,設定,設定,설정,Einstellungen,Configuración,Paramètres,Настройки,Configurações,Impostazioni
@@ -148,9 +148,20 @@ colorRed,红色,Red,紅色,紅色,赤,빨간색,Rot,Rojo,Rouge,Красный,Ve
 colorOrange,橙色,Orange,橙色,橙色,オレンジ,주황색,Orange,Naranja,Orange,Оранжевый,Laranja,Arancione
 colorPink,粉色,Pink,粉紅色,粉紅色,ピンク,분홍색,Rosa,Rosa,Rose,Розовый,Rosa,Rosa
 colorTeal,青色,Teal,青綠色,藍綠色,ティール,청록색,Türkis,Turquesa,Turquoise,Бирюзовый,Turquesa,Turchese
-customFields,自定义字段,Custom Fields,,,,,,,,,,
-customFieldKey,键,Key,,,,,,,,,,
-customFieldValue,值,Value,,,,,,,,,,
-addCustomField,添加自定义字段,Add custom field,,,,,,,,,,
-removeCustomField,删除自定义字段,Remove custom field,,,,,,,,,,
-confirmRemoveCustomField,确定要删除自定义字段「{name}」吗？,"Remove custom field ""{name}""?",,,,,,,,,,
+customFields,自定义字段,Custom Fields,自訂欄位,自訂欄位,カスタムフィールド,사용자 정의 필드,Benutzerdefinierte Felder,Campos personalizados,Champs personnalisés,Пользовательские поля,Campos personalizados,Campi personalizzati
+customFieldKey,键,Key,鍵,鍵,キー,키,Schlüssel,Clave,Clé,Ключ,Chave,Chiave
+customFieldValue,值,Value,值,值,値,값,Wert,Valor,Valeur,Значение,Valor,Valore
+addCustomField,添加自定义字段,Add custom field,新增自訂欄位,新增自訂欄位,カスタムフィールドを追加,사용자 정의 필드 추가,Benutzerdefiniertes Feld hinzufügen,Agregar campo personalizado,Ajouter un champ personnalisé,Добавить пользовательское поле,Adicionar campo personalizado,Aggiungi campo personalizzato
+removeCustomField,删除自定义字段,Remove custom field,移除自訂欄位,移除自訂欄位,カスタムフィールドを削除,사용자 정의 필드 삭제,Benutzerdefiniertes Feld entfernen,Eliminar campo personalizado,Supprimer un champ personnalisé,Удалить пользовательское поле,Remover campo personalizado,Rimuovi campo personalizzato
+entries,条目,Entries,項目,項目,エントリ,항목,Einträge,Entrées,Entrées,Записи,Entradas,Voci
+confirmRemoveCustomField,确定要删除自定义字段「{name}」吗？,"Remove custom field ""{name}""?",確認刪除自訂欄位「{name}」？,確認刪除自訂欄位「{name}」？,カスタムフィールド「{name}」を削除しますか？,사용자 정의 필드「{name}」을 삭제하시겠습니까?,Benutzerdefiniertes Feld "{name}" wirklich entfernen?,¿Desea eliminar el campo personalizado "{name}"?,Voulez-vous supprimer le champ personnalisé « {name} »?,Удалить пользовательское поле «{name}»?,Deseja remover o campo personalizado "{name}"?,Vuoi rimuovere il campo personalizzato "{name}"?
+fieldHistory,字段历史,Field History,欄位記錄,欄位紀錄,フィールド履歴,필드 기록,Feldverlauf,Historial de campos,Historique des champs,История полей,Histórico de campos,Cronologia campi
+noHistory,暂无历史记录,No history available,暫無記錄,暫無紀錄,履歴はありません,기록 없음,Kein Verlauf vorhanden,Sin historial disponible,Aucun historique disponible,История отсутствует,Sem histórico disponível,Nessuna cronologia disponibile
+recycleBin,回收站,Recycle Bin,資源回收筒,資源回收筒,ゴミ箱,휴지통,Papierkorb,Papelera,Corbeille,Корзина,Lixeira,Cestino
+recycleBinEmpty,回收站是空的,Recycle bin is empty,資源回收筒沒有項目,資源回收筒沒有項目,ゴミ箱は空です,휴지통이 비어 있습니다,Der Papierkorb ist leer,La papelera está vacía,La corbeille est vide,Корзина пуста,A lixeira está vazia,Il cestino è vuoto
+deletedVaults,已删除的密码库,Deleted Vaults,已刪除密碼庫,已刪除密碼庫,削除済みボールト,삭제된 볼트,Gelöschte Tresore,Bóvedas eliminadas,Coffres supprimés,Удаленные хранилища,Cofres excluídos,Vault eliminati
+restore,恢复,Restore,還原,還原,復元,복원,Wiederherstellen,Restaurer,Restaurer,Восстановить,Restaurar,Ripristina
+permanentlyDelete,彻底删除,Permanently Delete,永久刪除,永久刪除,完全削除,영구 삭제,Dauerhaft löschen,Eliminar permanentemente,Supprimer définitivement,Удалить навсегда,Excluir permanentemente,Elimina definitivamente
+confirmPermanentlyDelete,确认彻底删除,Confirm Permanent Delete,確認永久刪除,確認永久刪除,完全削除を確認,영구 삭제 확인,Dauerhaftes Löschen bestätigen,Confirmar eliminación permanente,Confirmer la suppression définitive,Подтвердить полное удаление,Confirmar exclusão permanente,Conferma eliminazione definitiva
+confirmPermanentlyDeleteMessage,确定要彻底删除「{name}」吗？此操作不可撤销。,"Permanently delete ""{name}""? This action cannot be undone.",確認永久刪除「{name}」？此動作無法復原。,確認永久刪除「{name}」？此動作無法復原。,「{name}」を完全に削除します。この操作は取り消せません。,「{name}」을 영구 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.,"{name}" dauerhaft löschen? Dieser Vorgang kann nicht rückgängig gemacht werden.,¿Eliminar permanentemente "{name}"? Esta acción no se puede deshacer.,Supprimer définitivement « {name} » ? Cette action est irréversible.,Удалить «{name}» навсегда? Действие невозможно отменить.,Excluir permanentemente "{name}"? Essa ação não pode ser desfeita.,Eliminare definitivamente "{name}"? Questa operazione non è annullabile.
+daysRemaining,剩余 {n} 天,{n} days remaining,剩餘 {n} 天,剩餘 {n} 天,残り {n} 日,남은 {n} 일,Noch {n} Tage verbleibend,Quedan {n} días,Il reste {n} jours,Осталось {n} дней,Faltam {n} dias,Rimangono {n} giorni
