@@ -10,6 +10,7 @@ export interface IconButtonProps extends HTMLMotionProps<"button"> {
 export function IconButton({ className, children, variant = "ghost", ...props }: IconButtonProps) {
   return (
     <motion.button
+      data-tauri-drag-region="false"
       whileHover={{ scale: 1.1, rotate: 5 }}
       whileTap={{ scale: 0.9 }}
       className={cn(

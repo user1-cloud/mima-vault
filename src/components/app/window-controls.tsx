@@ -61,18 +61,21 @@ export function WindowControls() {
   return (
     <div className="flex h-8">
       <button
+        data-tauri-drag-region="false"
         onClick={minimize}
         className={`${btnBase} text-foreground/60 hover:bg-foreground/10 hover:text-foreground`}
       >
         <MinimizeIcon />
       </button>
       <button
+        data-tauri-drag-region="false"
         onClick={toggleMaximize}
         className={`${btnBase} text-foreground/60 hover:bg-foreground/10 hover:text-foreground`}
       >
         {maximized ? <RestoreIcon /> : <MaximizeIcon />}
       </button>
       <button
+        data-tauri-drag-region="false"
         onClick={close}
         className={`${btnBase} text-foreground/60 hover:bg-[#c42b1c] hover:text-white`}
       >

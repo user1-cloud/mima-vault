@@ -305,7 +305,7 @@ export function VaultList() {
   return (
     <div className="h-full overflow-y-auto bg-surface p-4 relative">
       {isDesktop() && (
-        <div className="absolute top-0 left-0 right-0 flex justify-end h-8 z-50" data-tauri-drag-region>
+        <div className="absolute top-0 left-0 right-0 flex justify-end h-8 z-[200]" data-tauri-drag-region>
           <WindowControls />
         </div>
       )}

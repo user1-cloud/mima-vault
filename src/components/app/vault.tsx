@@ -363,7 +363,7 @@ export function Vault() {
   return (
     <div className="h-full flex bg-surface relative overflow-hidden">
       {isDesktop() && (
-        <div className="absolute top-0 left-0 right-0 flex justify-end h-8 z-[60]" data-tauri-drag-region>
+        <div className="absolute top-0 left-0 md:left-72 lg:left-80 right-0 flex justify-end h-8 z-[200]" data-tauri-drag-region>
           <WindowControls />
         </div>
       )}
