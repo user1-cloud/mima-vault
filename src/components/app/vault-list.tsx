@@ -276,18 +276,19 @@ export function VaultList() {
     setBiometricLoading(true);
     setUnlockError("");
     try {
-      const ok = await biometricUnlock(unlockingVaultId);
-      if (ok) {
+      const result = await biometricUnlock(unlockingVaultId);
+      if (result === "ok") {
         navigateToWithTransition("vault");
-      } else {
-        setUnlockError(t("biometricFailed"));
+      } else if (result === "failed") {
+        setUnlockError(t("biometricStale"));
+        checkBiometricEnabled(unlockingVaultId).then(setBiometricAvailable);
       }
     } catch (e) {
       setUnlockError(String(e));
     } finally {
       setBiometricLoading(false);
     }
-  }, [unlockingVaultId, biometricUnlock]);
+  }, [unlockingVaultId, biometricUnlock, checkBiometricEnabled]);
 
   if (loading) {
     return (

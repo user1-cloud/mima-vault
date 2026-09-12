@@ -102,6 +102,8 @@ const en: Translations = {
   disableBiometric: "Disable biometric unlock",
   biometricDesc: "Use fingerprint or face ID to quickly unlock your vault.",
   biometricFailed: "Biometric verification failed",
+  biometricStoreFailed: "Failed to save biometric unlock, please try again",
+  biometricStale: "Biometric unlock data has expired — unlock once with your master password",
   enterPasswordToEnable: "Enter your master password to enable biometrics",
   biometricNotAvailable: "Biometrics unavailable on this device",
   autoLock: "Auto‑Lock",

@@ -100,6 +100,8 @@ const zh = {
   disableBiometric: "禁用指纹解锁",
   biometricDesc: "使用指纹或面部识别快速解锁密码库。",
   biometricFailed: "生物识别验证失败",
+  biometricStoreFailed: "指纹解锁保存失败，请重试",
+  biometricStale: "指纹解锁信息已失效，请先用主密码解锁一次",
   enterPasswordToEnable: "输入主密码以启用生物识别",
   biometricNotAvailable: "此设备不支持生物识别",
   autoLock: "自动锁定",

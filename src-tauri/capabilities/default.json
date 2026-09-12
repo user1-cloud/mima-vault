@@ -15,22 +15,6 @@
     "shell:allow-open",
     "dialog:default",
     "fs:default",
-    "biometry:default",
-    {
-      "identifier": "biometry:allow-set-data",
-      "allow": [{ "domain": "mima" }]
-    },
-    {
-      "identifier": "biometry:allow-get-data",
-      "allow": [{ "domain": "mima" }]
-    },
-    {
-      "identifier": "biometry:allow-has-data",
-      "allow": [{ "domain": "mima" }]
-    },
-    {
-      "identifier": "biometry:allow-remove-data",
-      "allow": [{ "domain": "mima" }]
-    }
+    "biometry:default"
   ]
 }

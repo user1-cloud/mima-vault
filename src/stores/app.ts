@@ -7,6 +7,43 @@ import {
   hasData,
   removeData,
 } from "@choochmeque/tauri-plugin-biometry-api";
+import { t } from "@/lib/i18n";
+import { isDesktop } from "@/lib/platform";
+
+const LEGACY_BIOMETRIC_DOMAIN = "mima";
+
+const CANCELLED_ERROR_CODES = new Set(["userCancel", "systemCancel"]);
+
+const biometricDomain = (vaultId: number) => `mima_vault_${vaultId}`;
+const biometricName = (vaultId: number) => `vault_${vaultId}`;
+
+export type BiometricUnlockResult = "ok" | "cancelled" | "failed";
+
+const hasStoredBiometricData = async (domain: string, name: string) => {
+  try {
+    const result = await hasData({ domain, name });
+    return result === true || (result as unknown as { hasData: boolean })?.hasData === true;
+  } catch {
+    return false;
+  }
+};
+
+const isCancelled = (error: unknown) => {
+  const text = typeof error === "string" ? error : error instanceof Error ? error.message : "";
+  const code = /^\[([^\]]+)\]/.exec(text)?.[1];
+  return code !== undefined && CANCELLED_ERROR_CODES.has(code);
+};
+
+const rearmBiometric = async (vaultId: number, password: string) => {
+  if (isDesktop()) return;
+  const domain = biometricDomain(vaultId);
+  const name = biometricName(vaultId);
+  try {
+    if (!(await hasStoredBiometricData(domain, name))) return;
+    await setData({ domain, name, data: password });
+  } catch {
+  }
+};
 
 export interface Entry {
   id: number;
@@ -80,7 +117,7 @@ interface AppState {
 
   loadVaults: () => Promise<void>;
   createVault: (name: string, password: string) => Promise<VaultInfo>;
-  openVault: (vaultId: number, password: string) => Promise<boolean>;
+  openVault: (vaultId: number, password: string, rearm?: boolean) => Promise<boolean>;
   closeVault: () => Promise<void>;
   renameVault: (vaultId: number, newName: string) => Promise<VaultInfo>;
   deleteVault: (vaultId: number) => Promise<void>;
@@ -130,7 +167,7 @@ interface AppState {
   checkBiometricAvailable: () => Promise<boolean>;
   checkBiometricEnabled: (vaultId: number) => Promise<boolean>;
   enableBiometric: (vaultId: number, password: string) => Promise<void>;
-  biometricUnlock: (vaultId: number) => Promise<boolean>;
+  biometricUnlock: (vaultId: number) => Promise<BiometricUnlockResult>;
   disableBiometric: (vaultId: number) => Promise<void>;
   verifyPassword: (password: string) => Promise<boolean>;
   setAutoLockTimeout: (timeout: number) => void;
@@ -160,7 +197,7 @@ export const useApp = create<AppState>((set, get) => ({
     return vault;
   },
 
-  openVault: async (vaultId, password) => {
+  openVault: async (vaultId, password, rearm = true) => {
     const ok = await invoke<boolean>("open_vault", {
       vaultId,
       masterPassword: password,
@@ -170,6 +207,7 @@ export const useApp = create<AppState>((set, get) => ({
       set({ activeVault: vault, isLocked: false });
       await get().loadEntries();
       await get().loadVaults();
+      if (rearm) await rearmBiometric(vaultId, password);
       return true;
     }
     return false;
@@ -360,42 +398,52 @@ export const useApp = create<AppState>((set, get) => ({
   },
 
   checkBiometricEnabled: async (vaultId) => {
-    try {
-      const result = await hasData({ domain: "mima", name: `vault_${vaultId}` });
-      return result === true || (result as unknown as { hasData: boolean })?.hasData === true;
-    } catch {
-      return false;
+    if (await hasStoredBiometricData(biometricDomain(vaultId), biometricName(vaultId))) {
+      return true;
     }
+    return await hasStoredBiometricData(LEGACY_BIOMETRIC_DOMAIN, biometricName(vaultId));
   },
 
   enableBiometric: async (vaultId, password) => {
-    await setData({
-      domain: "mima",
-      name: `vault_${vaultId}`,
-      data: password,
-    });
+    const domain = biometricDomain(vaultId);
+    const name = biometricName(vaultId);
+    await setData({ domain, name, data: password });
+    if (!(await hasStoredBiometricData(domain, name))) {
+      throw new Error(t("biometricStoreFailed"));
+    }
   },
 
   biometricUnlock: async (vaultId) => {
-    try {
-      const { data: password } = await getData({
-        domain: "mima",
-        name: `vault_${vaultId}`,
-        reason: "Verify your identity to unlock the vault",
-      });
-      const ok = await get().openVault(vaultId, password);
-      if (!ok) {
-        await get().disableBiometric(vaultId);
+    const name = biometricName(vaultId);
+    let password: string | null = null;
+    for (const domain of [biometricDomain(vaultId), LEGACY_BIOMETRIC_DOMAIN]) {
+      if (!(await hasStoredBiometricData(domain, name))) continue;
+      try {
+        const response = await getData({
+          domain,
+          name,
+          reason: "Verify your identity to unlock the vault",
+        });
+        password = response.data;
+        break;
+      } catch (e) {
+        if (isCancelled(e)) return "cancelled";
       }
-      return ok;
-    } catch {
-      return false;
     }
+    if (password === null) return "failed";
+    if (await get().openVault(vaultId, password, false)) return "ok";
+    await get().disableBiometric(vaultId);
+    return "failed";
   },
 
   disableBiometric: async (vaultId) => {
     try {
-      await removeData({ domain: "mima", name: `vault_${vaultId}` });
+      await removeData({ domain: biometricDomain(vaultId), name: biometricName(vaultId) });
+    } catch {
+      // already removed
+    }
+    try {
+      await removeData({ domain: LEGACY_BIOMETRIC_DOMAIN, name: biometricName(vaultId) });
     } catch {
       // already removed
     }

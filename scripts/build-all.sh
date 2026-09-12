@@ -16,6 +16,17 @@ echo "=== Release: $RELEASE_DIR ==="
 rm -rf "$RELEASE_DIR"
 mkdir -p "$RELEASE_DIR"
 
+# Windows/Git Bash 下若系统盘(C:)空间不足,默认把 Gradle 缓存和临时目录
+# 重定向到 E: 盘(可用 GRADLE_USER_HOME / TMP / TEMP 环境变量覆盖)。
+# WSL / Linux 环境不生效,保持系统默认路径。
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    export GRADLE_USER_HOME="${GRADLE_USER_HOME:-E:/gradle-cache}"
+    export TMP="${TMP:-E:/build-tmp}"
+    export TEMP="${TEMP:-$TMP}"
+    ;;
+esac
+
 
 # 检查 Rust target 是否已安装
 has_target() {
